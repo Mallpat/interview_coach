@@ -1,0 +1,16 @@
+{
+  "short_name": "InterviewAI",
+  "name": "AI Interview Coach & Career Mentor",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><circle cx='50' cy='50' r='45' fill='%23080C14' stroke='%2300F2FE' stroke-width='4'/><text x='50%' y='55%' font-size='48' text-anchor='middle' dominant-baseline='central'>🎯</text></svg>",
+      "type": "image/svg+xml",
+      "sizes": "192x192 512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#080C14",
+  "theme_color": "#090E1A",
+  "display": "standalone",
+  "orientation": "portrait"
+}

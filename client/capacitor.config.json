@@ -1,0 +1,9 @@
+{
+  "appId": "com.aiinterviewcoach.app",
+  "appName": "AI Interview Coach",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "cleartext": true
+  }
+}

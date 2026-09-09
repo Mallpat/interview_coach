@@ -1,0 +1,23 @@
+{
+  "folders": [
+    {
+      "name": "🎯 AI Interview Coach (Full Project)",
+      "path": "."
+    },
+    {
+      "name": "📱 Frontend Mobile App",
+      "path": "client"
+    },
+    {
+      "name": "🧠 Backend & AI Services",
+      "path": "server"
+    }
+  ],
+  "settings": {
+    "editor.tabSize": 2,
+    "editor.wordWrap": "on",
+    "files.exclude": {
+      "**/.git": true
+    }
+  }
+}

@@ -1,0 +1,27 @@
+# Dependencies
+node_modules/
+client/node_modules/
+server/node_modules/
+
+# Production Builds
+dist/
+client/dist/
+
+# Android & Compiled Binaries
+*.apk
+client/android/.gradle/
+client/android/build/
+client/android/app/build/
+
+# Environment Variables & Secrets
+.env
+.env.local
+*.env
+
+# IDE, OS & Temp
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+.uix/
+.vercel

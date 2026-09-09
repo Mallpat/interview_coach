@@ -1,0 +1,212 @@
+// AI Interview Coach Database Schema (Prisma)
+// Supports PostgreSQL (Production) and SQLite (Local Development)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql" // Switch to "sqlite" for lightweight local dev if desired
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String
+  name          String
+  avatarUrl     String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  profile             Profile?
+  interviewSessions   InterviewSession[]
+  codingSubmissions   CodingSubmission[]
+  resumes             Resume[]
+  mentorConversations MentorConversation[]
+  analyticsSnapshots  AnalyticsSnapshot[]
+
+  @@map("users")
+}
+
+model Profile {
+  id          String   @id @default(uuid())
+  userId      String   @unique
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  targetRole  String   @default("Full Stack Developer")
+  experience  String   @default("Mid-Level (2-4 yrs)")
+  techStack   String   @default("React, Node.js, TypeScript, PostgreSQL")
+  targetCompany String @default("Tech Tier 1")
+  bio         String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("profiles")
+}
+
+model InterviewSession {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role        String
+  difficulty  String    // Junior, Mid, Senior, Lead
+  type        String    // Behavioral, Technical, System Design, Mixed
+  status      String    @default("in_progress") // in_progress, completed, abandoned
+  startedAt   DateTime  @default(now())
+  endedAt     DateTime?
+
+  questions   InterviewQuestion[]
+  feedback    Feedback?
+
+  @@map("interview_sessions")
+}
+
+model InterviewQuestion {
+  id         String            @id @default(uuid())
+  sessionId  String
+  session    InterviewSession  @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question   String
+  category   String            // technical, behavioral, architecture, coding
+  orderNo    Int
+  createdAt  DateTime          @default(now())
+
+  answers    Answer[]
+
+  @@map("interview_questions")
+}
+
+model Answer {
+  id              String            @id @default(uuid())
+  questionId      String
+  question        InterviewQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  transcript      String
+  durationSeconds Int               @default(0)
+  fillerWordCount Int               @default(0)
+  audioMetrics    String?           // JSON string of audio pacing, pitch, pause stats
+  videoMetrics    String?           // JSON string of eye-contact, posture, face stability
+  createdAt       DateTime          @default(now())
+
+  @@map("answers")
+}
+
+model Feedback {
+  id             String           @id @default(uuid())
+  sessionId      String           @unique
+  session        InterviewSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  overallScore   Int              // 0-100
+  communication  Int              // 0-100
+  technical      Int              // 0-100
+  confidence     Int              // 0-100
+  nonVerbalScore Int              @default(80)
+  strengths      String           // JSON string array
+  weaknesses     String           // JSON string array
+  improvements   String           // JSON string array
+  starAnalysis   String?          // JSON breakdown for behavioral answers
+  questionDetail String?          // JSON array of per-question evaluation
+  createdAt      DateTime         @default(now())
+
+  @@map("feedback")
+}
+
+model CodingChallenge {
+  id          String   @id @default(uuid())
+  title       String
+  slug        String   @unique
+  difficulty  String   // Easy, Medium, Hard
+  category    String   // Arrays, Strings, Trees, Dynamic Programming, System
+  prompt      String
+  starterCode String
+  solution    String?
+  testData    String   // JSON string of test cases: inputs & expected outputs
+  createdAt   DateTime @default(now())
+
+  submissions CodingSubmission[]
+
+  @@map("coding_challenges")
+}
+
+model CodingSubmission {
+  id           String          @id @default(uuid())
+  userId       String
+  user         User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  challengeId  String
+  challenge    CodingChallenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+  code         String
+  language     String          @default("javascript")
+  status       String          // passed, failed, runtime_error, time_limit
+  score        Int             @default(0)
+  passedCount  Int             @default(0)
+  totalCount   Int             @default(0)
+  runtimeMs    Float           @default(0)
+  aiReview     String?         // JSON analysis of complexity, style, optimizations
+  submittedAt  DateTime        @default(now())
+
+  @@map("coding_submissions")
+}
+
+model Resume {
+  id            String     @id @default(uuid())
+  userId        String
+  user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fileName      String
+  extractedText String
+  sectionsJson  String     // JSON object of extracted sections: summary, experience, skills, education
+  atsScore      Int        @default(0)
+  atsFeedback   String     // JSON object with score breakdown, missing keywords, suggestions
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  jobMatches    JobMatch[]
+
+  @@map("resumes")
+}
+
+model JobMatch {
+  id           String   @id @default(uuid())
+  resumeId     String
+  resume       Resume   @relation(fields: [resumeId], references: [id], onDelete: Cascade)
+  jobTitle     String
+  companyName  String?
+  jdText       String
+  matchScore   Int      // 0-100
+  matchedSkills String  // JSON array
+  missingSkills String  // JSON array
+  insights     String   // JSON recommendations & talking points
+  createdAt    DateTime @default(now())
+
+  @@map("job_matches")
+}
+
+model MentorConversation {
+  id        String          @id @default(uuid())
+  userId    String
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String          @default("Career Strategy Session")
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  messages  MentorMessage[]
+
+  @@map("mentor_conversations")
+}
+
+model MentorMessage {
+  id             String             @id @default(uuid())
+  conversationId String
+  conversation   MentorConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  role           String             // user, assistant, system
+  content        String
+  createdAt      DateTime           @default(now())
+
+  @@map("mentor_messages")
+}
+
+model AnalyticsSnapshot {
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  metric     String   // readiness, technical_avg, communication_avg, coding_pass_rate, ats_score
+  value      Float
+  recordedAt DateTime @default(now())
+
+  @@map("analytics_snapshots")
+}

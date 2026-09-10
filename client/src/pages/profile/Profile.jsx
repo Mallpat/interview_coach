@@ -9,8 +9,8 @@ export const Profile = () => {
   const { user, profile, logout } = useAuth();
   const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
 
-  const candidateName = profile?.fullName || 'Ananya Sharma';
-  const role = profile?.targetRole || 'Senior Frontend Engineer';
+  const candidateName = user?.name || profile?.fullName || 'Candidate';
+  const role = profile?.targetRole || 'Full Stack Engineer';
 
   const menuItems = [
     { label: 'Admin Panel Overview', path: '/admin', icon: ShieldCheck, badge: 'Web' },

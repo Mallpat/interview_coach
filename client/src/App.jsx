@@ -5,11 +5,11 @@ import { MobileTopBar } from './layouts/MobileTopBar';
 import { MobileBottomNav } from './layouts/MobileBottomNav';
 import { ScreenNavigator } from './components/ScreenNavigator';
 
-// Screens 1 to 4: Auth & Onboarding
 import { GetStartedPage } from './pages/auth/GetStartedPage';
 import { SignupPage } from './pages/auth/SignupPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
+import { EmailVerificationPage } from './pages/auth/EmailVerificationPage';
 
 // Screen 5: Profile Setup
 import { ProfileSetupPage } from './pages/profile/ProfileSetupPage';
@@ -128,6 +128,9 @@ const MobileAppShell = () => {
 
             {/* Screen 4: Forgot Password */}
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+
+            {/* Email Verification */}
+            <Route path="/verify-email" element={<EmailVerificationPage />} />
 
             {/* Screen 5: Profile Setup */}
             <Route path="/profile-setup" element={<ProfileSetupPage />} />

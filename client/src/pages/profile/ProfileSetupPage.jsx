@@ -1,17 +1,34 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Edit2, Plus, FileText, Check, ArrowRight } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export const ProfileSetupPage = () => {
   const navigate = useNavigate();
-  const { profile, updateProfile } = useAuth();
+  const location = useLocation();
+  const { user, profile, updateProfile } = useAuth();
 
-  const [fullName, setFullName] = useState(profile?.fullName || 'Ananya Sharma');
+  // Pick up name passed from SignupPage, EmailVerificationPage, or Firebase Auth user
+  const initialName = location.state?.fullName || user?.name || profile?.fullName || '';
+  const [fullName, setFullName] = useState(initialName);
   const [targetRole, setTargetRole] = useState(profile?.targetRole || 'Frontend');
-  const [skills, setSkills] = useState(['React', 'Node.js']);
+  const [skills, setSkills] = useState(profile?.skills || ['React', 'Node.js']);
   const [newSkill, setNewSkill] = useState('');
   const [isAddingSkill, setIsAddingSkill] = useState(false);
+
+  // Sync state if user or location state arrives after mount
+  useEffect(() => {
+    if (location.state?.fullName) {
+      setFullName(location.state.fullName);
+    } else if (user?.name && (!fullName || fullName === 'Ananya Sharma')) {
+      setFullName(user.name);
+    } else if (profile?.fullName && (!fullName || fullName === 'Ananya Sharma')) {
+      setFullName(profile.fullName);
+    }
+  }, [location.state, user, profile]);
+
+  const avatarInitial = (fullName?.trim()?.charAt(0) || user?.name?.charAt(0) || 'C').toUpperCase();
+  const resumeDisplayName = location.state?.resumeName || user?.resumeName || 'resume_final.pdf';
 
   const handleAddSkill = (e) => {
     e.preventDefault();
@@ -27,10 +44,11 @@ export const ProfileSetupPage = () => {
   };
 
   const handleContinue = () => {
+    const finalName = fullName.trim() || user?.name || 'Candidate';
     if (updateProfile) {
-      updateProfile({ fullName, targetRole, skills });
+      updateProfile({ fullName: finalName, targetRole, skills });
     }
-    navigate('/dashboard');
+    navigate('/dashboard', { state: { fullName: finalName, role: targetRole } });
   };
 
   return (
@@ -43,7 +61,7 @@ export const ProfileSetupPage = () => {
       maxWidth: '380px',
       margin: '0 auto'
     }}>
-      {/* Centered Avatar with Edit Pencil Badge */}
+      {/* Centered Avatar with dynamic initial and Edit Pencil Badge */}
       <div style={{
         display: 'flex',
         justifyContent: 'center',
@@ -62,11 +80,11 @@ export const ProfileSetupPage = () => {
           boxShadow: '0 0 25px rgba(0, 245, 160, 0.2)'
         }}>
           <span style={{
-            fontSize: '2rem',
+            fontSize: '2.2rem',
             fontWeight: 800,
             color: '#00F5A0'
           }}>
-            {fullName.charAt(0) || 'A'}
+            {avatarInitial}
           </span>
 
           {/* Pencil Edit Badge */}
@@ -92,45 +110,53 @@ export const ProfileSetupPage = () => {
       {/* Inputs Form */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
         <div>
+          <label style={{ display: 'block', fontSize: '0.78rem', color: '#94A3B8', marginBottom: '0.4rem', fontWeight: 600 }}>
+            Candidate Name
+          </label>
           <input
             type="text"
             className="dark-input"
-            placeholder="Full name"
+            placeholder="Enter your full name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
           />
         </div>
 
         {/* Target role dropdown */}
-        <div style={{ position: 'relative' }}>
-          <select
-            className="dark-input"
-            value={targetRole}
-            onChange={(e) => setTargetRole(e.target.value)}
-            style={{
-              appearance: 'none',
-              cursor: 'pointer',
-              color: '#FFFFFF'
-            }}
-          >
-            <option value="Frontend">Frontend</option>
-            <option value="Backend">Backend</option>
-            <option value="Full Stack">Full Stack</option>
-            <option value="Data Engineer">Data Engineer</option>
-            <option value="DevOps">DevOps</option>
-            <option value="System Architect">System Architect</option>
-          </select>
-          <span style={{
-            position: 'absolute',
-            right: '1rem',
-            top: '50%',
-            transform: 'translateY(-50%)',
-            pointerEvents: 'none',
-            color: '#94A3B8',
-            fontSize: '0.75rem'
-          }}>
-            ▼
-          </span>
+        <div>
+          <label style={{ display: 'block', fontSize: '0.78rem', color: '#94A3B8', marginBottom: '0.4rem', fontWeight: 600 }}>
+            Target Interview Role
+          </label>
+          <div style={{ position: 'relative' }}>
+            <select
+              className="dark-input"
+              value={targetRole}
+              onChange={(e) => setTargetRole(e.target.value)}
+              style={{
+                appearance: 'none',
+                cursor: 'pointer',
+                color: '#FFFFFF'
+              }}
+            >
+              <option value="Frontend">Frontend</option>
+              <option value="Backend">Backend</option>
+              <option value="Full Stack">Full Stack</option>
+              <option value="Data Engineer">Data Engineer</option>
+              <option value="DevOps">DevOps</option>
+              <option value="System Architect">System Architect</option>
+            </select>
+            <span style={{
+              position: 'absolute',
+              right: '1rem',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              pointerEvents: 'none',
+              color: '#94A3B8',
+              fontSize: '0.75rem'
+            }}>
+              ▼
+            </span>
+          </div>
         </div>
 
         {/* Skills Section */}
@@ -233,7 +259,7 @@ export const ProfileSetupPage = () => {
           color: '#E2E8F0'
         }}>
           <FileText size={16} color="#00F5A0" />
-          <span style={{ fontWeight: 600 }}>resume_final.pdf</span>
+          <span style={{ fontWeight: 600 }}>{resumeDisplayName}</span>
           <span style={{ color: '#00F5A0', marginLeft: 'auto', fontSize: '0.72rem', fontWeight: 600 }}>
             uploaded
           </span>

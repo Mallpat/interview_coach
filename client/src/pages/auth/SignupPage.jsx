@@ -1,16 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FileUp, CheckCircle, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, getSavedCandidateName, isInvalidOrAnanya } from '../../context/AuthContext';
 
 export const SignupPage = () => {
   const navigate = useNavigate();
-  const { register, loginWithGoogle } = useAuth();
+  const { register, loginWithGoogle, candidateName, setCandidateName } = useAuth();
+  
+  const initialName = (!isInvalidOrAnanya(candidateName) ? candidateName : null) || getSavedCandidateName();
   const [formData, setFormData] = useState({
-    fullName: '',
+    fullName: initialName,
     email: '',
     password: ''
   });
+
+  useEffect(() => {
+    if (candidateName && !isInvalidOrAnanya(candidateName) && formData.fullName !== candidateName) {
+      setFormData(prev => ({ ...prev, fullName: candidateName }));
+    }
+  }, [candidateName]);
   const [resumeFile, setResumeFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
@@ -197,9 +205,11 @@ export const SignupPage = () => {
             value={formData.fullName}
             onChange={(e) => {
               const val = e.target.value;
-              setFormData({ ...formData, fullName: val });
+              setFormData(prev => ({ ...prev, fullName: val }));
+              if (setCandidateName) setCandidateName(val);
               try {
                 localStorage.setItem('candidate_name', val);
+                window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: val }));
               } catch (err) {}
             }}
             required

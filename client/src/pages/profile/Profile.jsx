@@ -1,15 +1,25 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Key, Flame, Compass, Building2, Bell, LogOut, Check, ChevronRight, ShieldCheck } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, getSavedCandidateName, isInvalidOrAnanya } from '../../context/AuthContext';
 import { AISettingsModal } from '../../components/AISettingsModal';
 
 export const Profile = () => {
   const navigate = useNavigate();
-  const { user, profile, logout } = useAuth();
+  const { user, profile, candidateName: authCandidateName, logout } = useAuth();
   const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
 
-  const candidateName = user?.name || profile?.fullName || 'Candidate';
+  const getCandidateFullName = () => {
+    if (authCandidateName && !isInvalidOrAnanya(authCandidateName)) return authCandidateName;
+    const stored = localStorage.getItem('candidate_name');
+    if (stored && !isInvalidOrAnanya(stored)) return stored;
+    if (user?.name && !isInvalidOrAnanya(user.name)) return user.name;
+    if (profile?.fullName && !isInvalidOrAnanya(profile.fullName)) return profile.fullName;
+    return 'User';
+  };
+
+  const candidateName = getCandidateFullName();
+  const avatarInitial = (candidateName.charAt(0) || 'U').toUpperCase();
   const role = profile?.targetRole || 'Full Stack Engineer';
 
   const menuItems = [
@@ -54,7 +64,7 @@ export const Profile = () => {
           fontSize: '1.4rem',
           flexShrink: 0
         }}>
-          {candidateName.charAt(0)}
+          {avatarInitial}
         </div>
 
         <div>

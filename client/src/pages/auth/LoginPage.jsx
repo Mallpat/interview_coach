@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Sparkles, ArrowRight, Zap, AlertCircle } from 'lucide-react';
+import { Sparkles, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export const LoginPage = () => {
@@ -70,11 +70,6 @@ export const LoginPage = () => {
     } finally {
       setGoogleLoading(false);
     }
-  };
-
-  const handleDemoLogin = () => {
-    setFormData({ email: 'ananya@engineer.ai', password: 'password123' });
-    navigate('/dashboard');
   };
 
   return (
@@ -226,30 +221,6 @@ export const LoginPage = () => {
           }}
         >
           {loading ? 'Logging in...' : 'Log in'}
-        </button>
-
-        {/* Demo 1-Click Fast Pass */}
-        <button
-          type="button"
-          onClick={handleDemoLogin}
-          style={{
-            background: 'rgba(0, 245, 160, 0.08)',
-            border: '1px solid rgba(0, 245, 160, 0.25)',
-            color: '#00F5A0',
-            padding: '0.65rem',
-            borderRadius: '12px',
-            fontSize: '0.8rem',
-            fontWeight: 600,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            marginTop: '0.25rem'
-          }}
-        >
-          <Zap size={14} />
-          <span>Quick Demo Access (Ananya)</span>
         </button>
       </form>
 

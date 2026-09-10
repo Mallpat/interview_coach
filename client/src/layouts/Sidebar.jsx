@@ -14,7 +14,7 @@ import {
 import { useAuth } from '../context/AuthContext';
 
 export const Sidebar = () => {
-  const { user, profile } = useAuth();
+  const { user, profile, candidateName } = useAuth();
 
   const navItems = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -179,10 +179,10 @@ export const Sidebar = () => {
         />
         <div style={{ flex: 1, minWidth: 0 }}>
           <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {user?.name || 'Alex Chen'}
+            {user?.name || candidateName || profile?.fullName || 'Candidate'}
           </p>
           <p style={{ fontSize: '0.725rem', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {user?.email || 'demo@interviewcoach.ai'}
+            {user?.email || ''}
           </p>
         </div>
       </div>

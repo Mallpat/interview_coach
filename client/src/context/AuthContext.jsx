@@ -22,16 +22,23 @@ import { api } from '../services/api';
 
 const AuthContext = createContext(null);
 
-const getSavedCandidateName = () => {
+export const isInvalidOrAnanya = (name) => {
+  if (!name || typeof name !== 'string') return false;
+  const trimmed = name.trim();
+  if (!trimmed) return false;
+  return /ananya/i.test(trimmed);
+};
+
+export const getSavedCandidateName = () => {
   try {
-    return localStorage.getItem('candidate_name') || '';
-  } catch (e) {
-    return '';
-  }
+    const saved = localStorage.getItem('candidate_name');
+    if (saved && saved.trim() && !isInvalidOrAnanya(saved)) return saved.trim();
+  } catch (e) {}
+  return '';
 };
 
 const DEFAULT_PROFILE = {
-  fullName: getSavedCandidateName(),
+  fullName: '',
   targetRole: 'Full Stack Engineer',
   experience: 'Senior (5+ yrs)',
   skills: ['React', 'TypeScript', 'Node.js', 'PostgreSQL'],
@@ -39,10 +46,49 @@ const DEFAULT_PROFILE = {
 };
 
 export const AuthProvider = ({ children }) => {
+  const [candidateName, setCandidateNameState] = useState(getSavedCandidateName);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(DEFAULT_PROFILE);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState(null);
+
+  const setCandidateName = (name) => {
+    if (name === undefined || name === null) return;
+    setCandidateNameState(name);
+    try {
+      localStorage.setItem('candidate_name', name);
+      window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: name }));
+    } catch (e) {}
+    setProfile(prev => ({ ...prev, fullName: name }));
+    setUser(prev => prev ? { ...prev, name: name } : { name });
+  };
+
+  // Clear any legacy mock 'Ananya' name and sync cross-component updates
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('candidate_name');
+      if (stored && isInvalidOrAnanya(stored)) {
+        localStorage.removeItem('candidate_name');
+        setCandidateNameState('');
+      }
+    } catch (e) {}
+
+    const handleUpdate = (e) => {
+      const newName = e?.detail || localStorage.getItem('candidate_name');
+      if (newName !== undefined && newName !== null && !isInvalidOrAnanya(newName) && newName !== candidateName) {
+        setCandidateNameState(newName);
+        setProfile(prev => ({ ...prev, fullName: newName }));
+        setUser(prev => prev ? { ...prev, name: newName } : { name: newName });
+      }
+    };
+
+    window.addEventListener('candidate_name_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('candidate_name_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, []);
 
   // Sync with Firebase Auth state on mount and keep session alive
   useEffect(() => {
@@ -308,7 +354,9 @@ export const AuthProvider = ({ children }) => {
       console.warn('Logout error:', err);
     } finally {
       localStorage.removeItem('coach_token');
+      localStorage.removeItem('candidate_name');
       setUser(null);
+      setCandidateNameState('');
       setProfile(DEFAULT_PROFILE);
     }
   };
@@ -348,6 +396,8 @@ export const AuthProvider = ({ children }) => {
       profile,
       loading,
       authError,
+      candidateName,
+      setCandidateName,
       login,
       register,
       loginWithGoogle,

@@ -1,32 +1,36 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Edit2, Plus, FileText, Check, ArrowRight } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, getSavedCandidateName, isInvalidOrAnanya } from '../../context/AuthContext';
 
 export const ProfileSetupPage = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { user, profile, updateProfile } = useAuth();
+  const { user, profile, updateProfile, candidateName, setCandidateName } = useAuth();
 
-  // Pick up name passed from SignupPage, localStorage, EmailVerificationPage, or Firebase Auth user
-  const getCandidateName = () => {
+  // Pick up name passed from SignupPage, localStorage, AuthContext, or location state
+  const getActiveCandidateName = () => {
     try {
-      const fromState = location.state?.fullName;
-      if (fromState && fromState.trim() && fromState !== 'Ananya Sharma') return fromState.trim();
-
+      if (candidateName && !isInvalidOrAnanya(candidateName)) {
+        return candidateName;
+      }
       const fromStorage = localStorage.getItem('candidate_name');
-      if (fromStorage && fromStorage.trim() && fromStorage !== 'Ananya Sharma') return fromStorage.trim();
-
+      if (fromStorage && !isInvalidOrAnanya(fromStorage)) {
+        return fromStorage;
+      }
+      const fromState = location.state?.fullName;
+      if (fromState && !isInvalidOrAnanya(fromState)) {
+        return fromState;
+      }
       const fromUser = user?.name;
-      if (fromUser && fromUser.trim() && fromUser !== 'Ananya Sharma') return fromUser.trim();
-
-      const fromProfile = profile?.fullName;
-      if (fromProfile && fromProfile.trim() && fromProfile !== 'Ananya Sharma') return fromProfile.trim();
+      if (fromUser && !isInvalidOrAnanya(fromUser)) {
+        return fromUser;
+      }
     } catch (e) {}
     return '';
   };
 
-  const [fullName, setFullName] = useState(getCandidateName);
+  const [fullName, setFullName] = useState(getActiveCandidateName);
   const [targetRole, setTargetRole] = useState(profile?.targetRole || 'Frontend');
   const [skills, setSkills] = useState(profile?.skills || ['React', 'Node.js']);
   const [newSkill, setNewSkill] = useState('');
@@ -34,13 +38,34 @@ export const ProfileSetupPage = () => {
 
   // Reactively sync state whenever location state, user, or storage updates
   useEffect(() => {
-    const currentName = getCandidateName();
+    const currentName = getActiveCandidateName();
     if (currentName && fullName !== currentName) {
       setFullName(currentName);
     }
-  }, [location.state, user, profile]);
+  }, [location.state, user, profile, candidateName]);
 
-  const avatarInitial = (fullName?.trim()?.charAt(0) || user?.name?.charAt(0) || 'C').toUpperCase();
+  // Real-time synchronization across screens
+  useEffect(() => {
+    const handleUpdate = (e) => {
+      const newName = e?.detail || localStorage.getItem('candidate_name');
+      if (newName && !isInvalidOrAnanya(newName) && fullName !== newName) {
+        setFullName(newName);
+      }
+    };
+    window.addEventListener('candidate_name_updated', handleUpdate);
+    window.addEventListener('storage', handleUpdate);
+    return () => {
+      window.removeEventListener('candidate_name_updated', handleUpdate);
+      window.removeEventListener('storage', handleUpdate);
+    };
+  }, [fullName]);
+
+  const avatarInitial = (
+    fullName?.trim()?.charAt(0) || 
+    candidateName?.trim()?.charAt(0) || 
+    user?.name?.trim()?.charAt(0) || 
+    'U'
+  ).toUpperCase();
   const resumeDisplayName = location.state?.resumeName || user?.resumeName || 'resume_final.pdf';
 
   const handleAddSkill = (e) => {
@@ -57,7 +82,11 @@ export const ProfileSetupPage = () => {
   };
 
   const handleContinue = () => {
-    const finalName = fullName.trim() || user?.name || 'Candidate';
+    const finalName = fullName.trim() || user?.name || candidateName?.trim() || 'Candidate';
+    if (setCandidateName) setCandidateName(finalName);
+    try {
+      localStorage.setItem('candidate_name', finalName);
+    } catch (e) {}
     if (updateProfile) {
       updateProfile({ fullName: finalName, targetRole, skills });
     }
@@ -134,8 +163,10 @@ export const ProfileSetupPage = () => {
             onChange={(e) => {
               const val = e.target.value;
               setFullName(val);
+              if (setCandidateName) setCandidateName(val);
               try {
                 localStorage.setItem('candidate_name', val);
+                window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: val }));
               } catch (err) {}
             }}
           />

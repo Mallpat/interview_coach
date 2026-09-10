@@ -1,24 +1,27 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Mic, Code, Sparkles, ArrowRight, TrendingUp } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, getSavedCandidateName, isInvalidOrAnanya } from '../../context/AuthContext';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, candidateName: authCandidateName } = useAuth();
 
   const getCandidateFirstName = () => {
     try {
+      if (authCandidateName && !isInvalidOrAnanya(authCandidateName)) {
+        return authCandidateName.trim().split(' ')[0];
+      }
       const fromStorage = localStorage.getItem('candidate_name');
-      if (fromStorage && fromStorage.trim() && fromStorage !== 'Ananya Sharma') {
+      if (fromStorage && !isInvalidOrAnanya(fromStorage)) {
         return fromStorage.trim().split(' ')[0];
       }
       const fromUser = user?.name;
-      if (fromUser && fromUser.trim() && fromUser !== 'Ananya Sharma') {
+      if (fromUser && !isInvalidOrAnanya(fromUser)) {
         return fromUser.trim().split(' ')[0];
       }
       const fromProfile = profile?.fullName;
-      if (fromProfile && fromProfile.trim() && fromProfile !== 'Ananya Sharma') {
+      if (fromProfile && !isInvalidOrAnanya(fromProfile)) {
         return fromProfile.trim().split(' ')[0];
       }
     } catch (e) {}
@@ -26,6 +29,7 @@ export const Dashboard = () => {
   };
 
   const candidateName = getCandidateFirstName();
+  const avatarInitial = (candidateName.charAt(0) || 'C').toUpperCase();
 
   return (
     <div style={{
@@ -74,7 +78,7 @@ export const Dashboard = () => {
             boxShadow: '0 0 15px rgba(0, 245, 160, 0.2)'
           }}
         >
-          {candidateName.charAt(0)}
+          {avatarInitial}
         </div>
       </div>
 

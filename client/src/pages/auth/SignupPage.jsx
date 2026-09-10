@@ -195,7 +195,13 @@ export const SignupPage = () => {
             className="dark-input"
             placeholder="Full name *"
             value={formData.fullName}
-            onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFormData({ ...formData, fullName: val });
+              try {
+                localStorage.setItem('candidate_name', val);
+              } catch (err) {}
+            }}
             required
           />
         </div>

@@ -5,9 +5,27 @@ import { useAuth } from '../../context/AuthContext';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
 
-  const candidateName = profile?.fullName?.split(' ')[0] || 'Ananya';
+  const getCandidateFirstName = () => {
+    try {
+      const fromStorage = localStorage.getItem('candidate_name');
+      if (fromStorage && fromStorage.trim() && fromStorage !== 'Ananya Sharma') {
+        return fromStorage.trim().split(' ')[0];
+      }
+      const fromUser = user?.name;
+      if (fromUser && fromUser.trim() && fromUser !== 'Ananya Sharma') {
+        return fromUser.trim().split(' ')[0];
+      }
+      const fromProfile = profile?.fullName;
+      if (fromProfile && fromProfile.trim() && fromProfile !== 'Ananya Sharma') {
+        return fromProfile.trim().split(' ')[0];
+      }
+    } catch (e) {}
+    return 'Candidate';
+  };
+
+  const candidateName = getCandidateFirstName();
 
   return (
     <div style={{

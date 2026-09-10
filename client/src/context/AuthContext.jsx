@@ -22,8 +22,16 @@ import { api } from '../services/api';
 
 const AuthContext = createContext(null);
 
+const getSavedCandidateName = () => {
+  try {
+    return localStorage.getItem('candidate_name') || '';
+  } catch (e) {
+    return '';
+  }
+};
+
 const DEFAULT_PROFILE = {
-  fullName: 'Ananya Sharma',
+  fullName: getSavedCandidateName(),
   targetRole: 'Full Stack Engineer',
   experience: 'Senior (5+ yrs)',
   skills: ['React', 'TypeScript', 'Node.js', 'PostgreSQL'],
@@ -309,6 +317,12 @@ export const AuthProvider = ({ children }) => {
    * Update Candidate Profile in State & Firestore
    */
   const updateCandidateProfile = async (newProfile) => {
+    if (newProfile.fullName) {
+      try {
+        localStorage.setItem('candidate_name', newProfile.fullName);
+      } catch (e) {}
+      setUser(prev => prev ? { ...prev, name: newProfile.fullName } : { name: newProfile.fullName });
+    }
     setProfile(prev => ({ ...prev, ...newProfile }));
 
     // Persist to Firestore if user is authenticated

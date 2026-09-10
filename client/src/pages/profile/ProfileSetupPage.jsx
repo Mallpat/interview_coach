@@ -8,22 +8,35 @@ export const ProfileSetupPage = () => {
   const location = useLocation();
   const { user, profile, updateProfile } = useAuth();
 
-  // Pick up name passed from SignupPage, EmailVerificationPage, or Firebase Auth user
-  const initialName = location.state?.fullName || user?.name || profile?.fullName || '';
-  const [fullName, setFullName] = useState(initialName);
+  // Pick up name passed from SignupPage, localStorage, EmailVerificationPage, or Firebase Auth user
+  const getCandidateName = () => {
+    try {
+      const fromState = location.state?.fullName;
+      if (fromState && fromState.trim() && fromState !== 'Ananya Sharma') return fromState.trim();
+
+      const fromStorage = localStorage.getItem('candidate_name');
+      if (fromStorage && fromStorage.trim() && fromStorage !== 'Ananya Sharma') return fromStorage.trim();
+
+      const fromUser = user?.name;
+      if (fromUser && fromUser.trim() && fromUser !== 'Ananya Sharma') return fromUser.trim();
+
+      const fromProfile = profile?.fullName;
+      if (fromProfile && fromProfile.trim() && fromProfile !== 'Ananya Sharma') return fromProfile.trim();
+    } catch (e) {}
+    return '';
+  };
+
+  const [fullName, setFullName] = useState(getCandidateName);
   const [targetRole, setTargetRole] = useState(profile?.targetRole || 'Frontend');
   const [skills, setSkills] = useState(profile?.skills || ['React', 'Node.js']);
   const [newSkill, setNewSkill] = useState('');
   const [isAddingSkill, setIsAddingSkill] = useState(false);
 
-  // Sync state if user or location state arrives after mount
+  // Reactively sync state whenever location state, user, or storage updates
   useEffect(() => {
-    if (location.state?.fullName) {
-      setFullName(location.state.fullName);
-    } else if (user?.name && (!fullName || fullName === 'Ananya Sharma')) {
-      setFullName(user.name);
-    } else if (profile?.fullName && (!fullName || fullName === 'Ananya Sharma')) {
-      setFullName(profile.fullName);
+    const currentName = getCandidateName();
+    if (currentName && fullName !== currentName) {
+      setFullName(currentName);
     }
   }, [location.state, user, profile]);
 
@@ -118,7 +131,13 @@ export const ProfileSetupPage = () => {
             className="dark-input"
             placeholder="Enter your full name"
             value={fullName}
-            onChange={(e) => setFullName(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFullName(val);
+              try {
+                localStorage.setItem('candidate_name', val);
+              } catch (err) {}
+            }}
           />
         </div>
 

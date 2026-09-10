@@ -44,6 +44,9 @@ export const LoginPage = () => {
 
     setLoading(true);
     try {
+      try {
+        localStorage.setItem('candidate_email', formData.email.trim());
+      } catch (e) {}
       if (login) {
         await login(formData.email.trim(), formData.password);
       }

@@ -47,6 +47,14 @@ import { AdminPanel } from './pages/admin/AdminPanel';
 // Screen 22: Profile & Settings
 import { Profile } from './pages/profile/Profile';
 
+const RootEntry = () => {
+  const candidateName = localStorage.getItem('candidate_name');
+  if (!candidateName) {
+    return <Navigate to="/get-started" replace />;
+  }
+  return <Dashboard />;
+};
+
 const MobileAppShell = () => {
   const [isSimulator, setIsSimulator] = useState(true);
 
@@ -135,8 +143,9 @@ const MobileAppShell = () => {
             {/* Screen 5: Profile Setup */}
             <Route path="/profile-setup" element={<ProfileSetupPage />} />
 
-            {/* Screen 6: Home Dashboard */}
-            <Route path="/" element={<Dashboard />} />
+            {/* Screen 1: Get Started & Root Entry */}
+            <Route path="/" element={<RootEntry />} />
+            <Route path="/get-started" element={<GetStartedPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
 
             {/* Screen 7: Resume Analyzer Results */}

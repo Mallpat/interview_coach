@@ -30,6 +30,9 @@ export const Profile = () => {
     { label: 'Notifications & Reminders', path: '/notifications', icon: Bell, badge: '2 New' }
   ];
 
+  const candidateEmail = user?.email || localStorage.getItem('candidate_email') || '';
+  const resumeName = user?.resumeName || localStorage.getItem('candidate_resume') || 'resume_final.pdf';
+
   return (
     <div style={{
       display: 'flex',
@@ -67,8 +70,8 @@ export const Profile = () => {
           {avatarInitial}
         </div>
 
-        <div>
-          <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF' }}>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {candidateName}
           </h2>
           <p style={{ fontSize: '0.8rem', color: '#94A3B8', marginTop: '2px' }}>
@@ -84,6 +87,58 @@ export const Profile = () => {
             fontWeight: 700
           }}>
             <span>● Profile Calibrated</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Real Candidate Credentials Section */}
+      <div style={{
+        background: '#0D1322',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderRadius: '16px',
+        padding: '1.1rem',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0.85rem'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#00F5A0', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+            Your Candidate Credentials
+          </span>
+          <button
+            onClick={() => navigate('/profile-setup')}
+            style={{
+              background: 'transparent',
+              border: 'none',
+              color: '#00F5A0',
+              fontSize: '0.75rem',
+              fontWeight: 600,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px'
+            }}
+          >
+            <span>Edit Profile</span>
+          </button>
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem', fontSize: '0.82rem' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+            <span style={{ color: '#94A3B8' }}>Full Name</span>
+            <span style={{ color: '#FFFFFF', fontWeight: 600 }}>{candidateName || 'Not entered yet'}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+            <span style={{ color: '#94A3B8' }}>Email Address</span>
+            <span style={{ color: '#FFFFFF', fontWeight: 500 }}>{candidateEmail || 'Not entered yet'}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0', borderBottom: '1px solid rgba(255, 255, 255, 0.05)' }}>
+            <span style={{ color: '#94A3B8' }}>Target Role</span>
+            <span style={{ color: '#00F5A0', fontWeight: 600 }}>{role}</span>
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0' }}>
+            <span style={{ color: '#94A3B8' }}>Resume</span>
+            <span style={{ color: '#CBD5E1', fontWeight: 500 }}>{resumeName}</span>
           </div>
         </div>
       </div>

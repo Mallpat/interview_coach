@@ -66,6 +66,7 @@ export const SignupPage = () => {
     if (setCandidateName) setCandidateName(candidateNameEntered);
     try {
       localStorage.setItem('candidate_name', candidateNameEntered);
+      if (formData.email) localStorage.setItem('candidate_email', formData.email.trim());
       window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: candidateNameEntered }));
     } catch (err) {}
 

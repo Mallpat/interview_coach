@@ -1,11 +1,23 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Mic, Code, Sparkles, ArrowRight, TrendingUp } from 'lucide-react';
 import { useAuth, getSavedCandidateName, isInvalidOrAnanya } from '../../context/AuthContext';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, candidateName: authCandidateName } = useAuth();
+
+  const location = useLocation();
+
+  // Clean any legacy mock names from browser localStorage
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem('candidate_name');
+      if (stored && isInvalidOrAnanya(stored)) {
+        localStorage.removeItem('candidate_name');
+      }
+    } catch (e) {}
+  }, []);
 
   const getCandidateFirstName = () => {
     try {
@@ -16,6 +28,10 @@ export const Dashboard = () => {
       if (fromStorage && !isInvalidOrAnanya(fromStorage)) {
         return fromStorage.trim().split(' ')[0];
       }
+      const fromState = location.state?.fullName;
+      if (fromState && !isInvalidOrAnanya(fromState)) {
+        return fromState.trim().split(' ')[0];
+      }
       const fromUser = user?.name;
       if (fromUser && !isInvalidOrAnanya(fromUser)) {
         return fromUser.trim().split(' ')[0];
@@ -25,10 +41,11 @@ export const Dashboard = () => {
         return fromProfile.trim().split(' ')[0];
       }
     } catch (e) {}
-    return 'Candidate';
+    return '';
   };
 
-  const candidateName = getCandidateFirstName();
+  const candidateFirstName = getCandidateFirstName();
+  const candidateName = candidateFirstName || 'Candidate';
   const avatarInitial = (candidateName.charAt(0) || 'C').toUpperCase();
 
   return (

@@ -24,15 +24,19 @@ const AuthContext = createContext(null);
 
 export const isInvalidOrAnanya = (name) => {
   if (!name || typeof name !== 'string') return false;
-  const trimmed = name.trim();
-  if (!trimmed) return false;
-  return /ananya/i.test(trimmed);
+  return /ananya/i.test(name.trim());
 };
 
 export const getSavedCandidateName = () => {
   try {
     const saved = localStorage.getItem('candidate_name');
-    if (saved && saved.trim() && !isInvalidOrAnanya(saved)) return saved.trim();
+    if (saved && saved.trim()) {
+      if (/ananya/i.test(saved)) {
+        localStorage.removeItem('candidate_name');
+        return '';
+      }
+      return saved.trim();
+    }
   } catch (e) {}
   return '';
 };
@@ -67,11 +71,11 @@ export const AuthProvider = ({ children }) => {
     setUser(prev => prev ? { ...prev, name: name } : { name });
   };
 
-  // Clear any legacy mock 'Ananya' name and sync cross-component updates
+  // Clear any legacy mock candidate name from localStorage and sync cross-component updates
   useEffect(() => {
     try {
       const stored = localStorage.getItem('candidate_name');
-      if (stored && isInvalidOrAnanya(stored)) {
+      if (stored && /ananya/i.test(stored)) {
         localStorage.removeItem('candidate_name');
         setCandidateNameState('');
       }
@@ -79,7 +83,7 @@ export const AuthProvider = ({ children }) => {
 
     const handleUpdate = (e) => {
       const newName = e?.detail || localStorage.getItem('candidate_name');
-      if (newName !== undefined && newName !== null && !isInvalidOrAnanya(newName) && newName !== candidateName) {
+      if (newName !== undefined && newName !== null && newName !== candidateName) {
         setCandidateNameState(newName);
         setProfile(prev => ({ ...prev, fullName: newName }));
         setUser(prev => prev ? { ...prev, name: newName } : { name: newName });

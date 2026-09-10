@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { FileUp, CheckCircle, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
-import { useAuth, getSavedCandidateName, isInvalidOrAnanya } from '../../context/AuthContext';
+import { useAuth, getSavedCandidateName } from '../../context/AuthContext';
 
 export const SignupPage = () => {
   const navigate = useNavigate();
   const { register, loginWithGoogle, candidateName, setCandidateName } = useAuth();
   
-  const initialName = (!isInvalidOrAnanya(candidateName) ? candidateName : null) || getSavedCandidateName();
+  const initialName = candidateName || getSavedCandidateName() || '';
   const [formData, setFormData] = useState({
     fullName: initialName,
     email: '',
@@ -15,7 +15,7 @@ export const SignupPage = () => {
   });
 
   useEffect(() => {
-    if (candidateName && !isInvalidOrAnanya(candidateName) && formData.fullName !== candidateName) {
+    if (candidateName && formData.fullName !== candidateName) {
       setFormData(prev => ({ ...prev, fullName: candidateName }));
     }
   }, [candidateName]);

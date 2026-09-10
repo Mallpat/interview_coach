@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { User, Key, Flame, Compass, Building2, Bell, LogOut, Check, ChevronRight, ShieldCheck } from 'lucide-react';
-import { useAuth, getSavedCandidateName, isInvalidOrAnanya } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 import { AISettingsModal } from '../../components/AISettingsModal';
 
 export const Profile = () => {
@@ -10,12 +10,12 @@ export const Profile = () => {
   const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
 
   const getCandidateFullName = () => {
-    if (authCandidateName && !isInvalidOrAnanya(authCandidateName)) return authCandidateName;
+    if (authCandidateName) return authCandidateName;
     const stored = localStorage.getItem('candidate_name');
-    if (stored && !isInvalidOrAnanya(stored)) return stored;
-    if (user?.name && !isInvalidOrAnanya(user.name)) return user.name;
-    if (profile?.fullName && !isInvalidOrAnanya(profile.fullName)) return profile.fullName;
-    return 'User';
+    if (stored) return stored;
+    if (user?.name) return user.name;
+    if (profile?.fullName) return profile.fullName;
+    return 'Candidate';
   };
 
   const candidateName = getCandidateFullName();

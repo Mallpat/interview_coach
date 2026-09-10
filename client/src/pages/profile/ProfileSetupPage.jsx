@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Edit2, Plus, FileText, Check, ArrowRight } from 'lucide-react';
-import { useAuth, getSavedCandidateName, isInvalidOrAnanya } from '../../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 export const ProfileSetupPage = () => {
   const navigate = useNavigate();
@@ -13,25 +13,25 @@ export const ProfileSetupPage = () => {
     try {
       // 1. Direct state passed from the previous page (SignupPage)
       const fromState = location.state?.fullName;
-      if (fromState && typeof fromState === 'string' && fromState.trim() && !isInvalidOrAnanya(fromState)) {
+      if (fromState && typeof fromState === 'string' && fromState.trim()) {
         return fromState.trim();
       }
       // 2. Candidate name saved in localStorage
       const fromStorage = localStorage.getItem('candidate_name');
-      if (fromStorage && typeof fromStorage === 'string' && fromStorage.trim() && !isInvalidOrAnanya(fromStorage)) {
+      if (fromStorage && typeof fromStorage === 'string' && fromStorage.trim()) {
         return fromStorage.trim();
       }
       // 3. AuthContext state
-      if (candidateName && typeof candidateName === 'string' && candidateName.trim() && !isInvalidOrAnanya(candidateName)) {
+      if (candidateName && typeof candidateName === 'string' && candidateName.trim()) {
         return candidateName.trim();
       }
       // 4. Authenticated user profile
       const fromUser = user?.name;
-      if (fromUser && typeof fromUser === 'string' && fromUser.trim() && !isInvalidOrAnanya(fromUser)) {
+      if (fromUser && typeof fromUser === 'string' && fromUser.trim()) {
         return fromUser.trim();
       }
       const fromProfile = profile?.fullName;
-      if (fromProfile && typeof fromProfile === 'string' && fromProfile.trim() && !isInvalidOrAnanya(fromProfile)) {
+      if (fromProfile && typeof fromProfile === 'string' && fromProfile.trim()) {
         return fromProfile.trim();
       }
     } catch (e) {}
@@ -44,20 +44,10 @@ export const ProfileSetupPage = () => {
   const [newSkill, setNewSkill] = useState('');
   const [isAddingSkill, setIsAddingSkill] = useState(false);
 
-  // Clear any legacy cached mock names on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem('candidate_name');
-      if (stored && isInvalidOrAnanya(stored)) {
-        localStorage.removeItem('candidate_name');
-      }
-    } catch (e) {}
-  }, []);
-
   // Reactively sync state whenever location state, user, or storage updates
   useEffect(() => {
     const fromPreviousPage = location.state?.fullName;
-    if (fromPreviousPage && typeof fromPreviousPage === 'string' && fromPreviousPage.trim() && !isInvalidOrAnanya(fromPreviousPage)) {
+    if (fromPreviousPage && typeof fromPreviousPage === 'string' && fromPreviousPage.trim()) {
       const validName = fromPreviousPage.trim();
       setFullName(validName);
       if (setCandidateName) setCandidateName(validName);
@@ -76,7 +66,7 @@ export const ProfileSetupPage = () => {
   useEffect(() => {
     const handleUpdate = (e) => {
       const newName = e?.detail || localStorage.getItem('candidate_name');
-      if (newName && !isInvalidOrAnanya(newName) && fullName !== newName) {
+      if (newName && fullName !== newName) {
         setFullName(newName);
       }
     };

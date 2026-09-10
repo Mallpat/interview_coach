@@ -44,23 +44,19 @@ export const ProfileSetupPage = () => {
   const [newSkill, setNewSkill] = useState('');
   const [isAddingSkill, setIsAddingSkill] = useState(false);
 
-  // Reactively sync state whenever location state, user, or storage updates
+  // Sync state only on initial mount or when location.state explicitly passes a name
   useEffect(() => {
     const fromPreviousPage = location.state?.fullName;
     if (fromPreviousPage && typeof fromPreviousPage === 'string' && fromPreviousPage.trim()) {
       const validName = fromPreviousPage.trim();
-      setFullName(validName);
-      if (setCandidateName) setCandidateName(validName);
-      try {
-        localStorage.setItem('candidate_name', validName);
-      } catch (e) {}
+      setFullName(prev => prev || validName);
     } else {
       const currentName = getActiveCandidateName();
-      if (currentName && fullName !== currentName) {
-        setFullName(currentName);
+      if (currentName) {
+        setFullName(prev => prev || currentName);
       }
     }
-  }, [location.state, user, profile, candidateName]);
+  }, [location.state?.fullName]);
 
   // Real-time synchronization across screens
   useEffect(() => {
@@ -100,16 +96,29 @@ export const ProfileSetupPage = () => {
     setSkills(skills.filter(s => s !== skillToRemove));
   };
 
-  const handleContinue = () => {
-    const finalName = fullName.trim() || user?.name || candidateName?.trim() || 'Candidate';
-    if (setCandidateName) setCandidateName(finalName);
-    try {
-      localStorage.setItem('candidate_name', finalName);
-    } catch (e) {}
-    if (updateProfile) {
-      updateProfile({ fullName: finalName, targetRole, skills });
+  const handleContinue = (e) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
     }
-    navigate('/dashboard', { state: { fullName: finalName, role: targetRole } });
+    try {
+      const finalName = (fullName || '').trim() || user?.name || candidateName?.trim() || 'Candidate';
+      if (setCandidateName) {
+        try { setCandidateName(finalName); } catch (err) {}
+      }
+      try {
+        localStorage.setItem('candidate_name', finalName);
+      } catch (e) {}
+      if (updateProfile) {
+        try {
+          updateProfile({ fullName: finalName, targetRole, skills });
+        } catch (err) {}
+      }
+      navigate('/dashboard', { state: { fullName: finalName, role: targetRole }, replace: true });
+    } catch (err) {
+      console.error('Continue navigation error:', err);
+      navigate('/dashboard', { replace: true });
+    }
   };
 
   return (
@@ -344,7 +353,10 @@ export const ProfileSetupPage = () => {
             padding: '0.9rem',
             marginTop: '0.5rem',
             borderRadius: '14px',
-            fontSize: '0.95rem'
+            fontSize: '0.95rem',
+            cursor: 'pointer',
+            position: 'relative',
+            zIndex: 10
           }}
         >
           <span>Continue</span>

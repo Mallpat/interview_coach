@@ -59,7 +59,8 @@ export const ScreenNavigator = () => {
       transform: 'translateX(-50%)',
       zIndex: 9999,
       maxWidth: '96vw',
-      width: '420px'
+      width: '420px',
+      pointerEvents: 'none'
     }}>
       {/* Expanded Screen Drawer */}
       {isOpen && (
@@ -73,7 +74,8 @@ export const ScreenNavigator = () => {
           marginBottom: '8px',
           boxShadow: '0 -10px 40px rgba(0, 0, 0, 0.8), 0 0 30px rgba(0, 245, 160, 0.15)',
           maxHeight: '380px',
-          overflowY: 'auto'
+          overflowY: 'auto',
+          pointerEvents: 'auto'
         }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
@@ -175,7 +177,8 @@ export const ScreenNavigator = () => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 245, 160, 0.2)'
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 245, 160, 0.2)',
+        pointerEvents: 'auto'
       }}>
         <button
           onClick={handlePrev}

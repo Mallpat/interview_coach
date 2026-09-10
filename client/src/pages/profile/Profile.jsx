@@ -53,22 +53,37 @@ export const Profile = () => {
         boxShadow: '0 0 25px rgba(0, 245, 160, 0.08)'
       }}>
         {/* Avatar */}
-        <div style={{
-          width: '56px',
-          height: '56px',
-          borderRadius: '50%',
-          background: 'radial-gradient(circle at center, rgba(0, 245, 160, 0.25) 0%, #0D1322 80%)',
-          border: '2px solid #00F5A0',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: '#00F5A0',
-          fontWeight: 800,
-          fontSize: '1.4rem',
-          flexShrink: 0
-        }}>
-          {avatarInitial}
-        </div>
+        {(user?.avatarUrl || localStorage.getItem('candidate_avatar')) ? (
+          <img
+            src={user?.avatarUrl || localStorage.getItem('candidate_avatar')}
+            alt={candidateName}
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '50%',
+              objectFit: 'cover',
+              border: '2px solid #00F5A0',
+              flexShrink: 0
+            }}
+          />
+        ) : (
+          <div style={{
+            width: '56px',
+            height: '56px',
+            borderRadius: '50%',
+            background: 'radial-gradient(circle at center, rgba(0, 245, 160, 0.25) 0%, #0D1322 80%)',
+            border: '2px solid #00F5A0',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: '#00F5A0',
+            fontWeight: 800,
+            fontSize: '1.4rem',
+            flexShrink: 0
+          }}>
+            {avatarInitial}
+          </div>
+        )}
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <h2 style={{ fontSize: '1.15rem', fontWeight: 800, color: '#FFFFFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>

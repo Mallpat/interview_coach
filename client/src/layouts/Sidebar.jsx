@@ -158,34 +158,62 @@ export const Sidebar = () => {
       </div>
 
       {/* User Footer */}
-      <div style={{
-        padding: '1rem 1.25rem',
-        borderTop: '1px solid rgba(255, 255, 255, 0.06)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '0.75rem',
-        background: '#070B14'
-      }}>
-        <img
-          src={user?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80'}
-          alt={user?.name || 'Candidate'}
-          style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '50%',
-            objectFit: 'cover',
-            border: '2px solid rgba(0, 242, 254, 0.5)'
-          }}
-        />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {user?.name || candidateName || profile?.fullName || 'Candidate'}
-          </p>
-          <p style={{ fontSize: '0.725rem', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-            {user?.email || ''}
-          </p>
-        </div>
-      </div>
+      {(() => {
+        const effectiveName = user?.name || candidateName || profile?.fullName || 'Candidate';
+        const avatarInitial = (effectiveName.charAt(0) || 'C').toUpperCase();
+        const displayEmail = user?.email || localStorage.getItem('candidate_email') || '';
+
+        return (
+          <div style={{
+            padding: '1rem 1.25rem',
+            borderTop: '1px solid rgba(255, 255, 255, 0.06)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            background: '#070B14'
+          }}>
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={effectiveName}
+                style={{
+                  width: '38px',
+                  height: '38px',
+                  borderRadius: '50%',
+                  objectFit: 'cover',
+                  border: '2px solid rgba(0, 245, 160, 0.7)',
+                  flexShrink: 0
+                }}
+              />
+            ) : (
+              <div style={{
+                width: '38px',
+                height: '38px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle at center, rgba(0, 245, 160, 0.25) 0%, #0D1322 80%)',
+                border: '1.5px solid rgba(0, 245, 160, 0.5)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#00F5A0',
+                fontWeight: 800,
+                fontSize: '0.95rem',
+                flexShrink: 0
+              }}>
+                {avatarInitial}
+              </div>
+            )}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: '0.85rem', fontWeight: 600, color: '#F8FAFC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {effectiveName}
+              </p>
+              <p style={{ fontSize: '0.725rem', color: '#64748B', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {displayEmail}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
     </aside>
   );
 };

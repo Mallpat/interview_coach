@@ -51,6 +51,10 @@ export const AuthProvider = ({ children }) => {
   const [profile, setProfile] = useState(DEFAULT_PROFILE);
   const [loading, setLoading] = useState(false);
   const [authError, setAuthError] = useState(null);
+  const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
+
+  const openGoogleModal = () => setIsGoogleModalOpen(true);
+  const closeGoogleModal = () => setIsGoogleModalOpen(false);
 
   const setCandidateName = (name) => {
     if (name === undefined || name === null) return;
@@ -106,7 +110,7 @@ export const AuthProvider = ({ children }) => {
             name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Candidate',
             email: firebaseUser.email,
             emailVerified: firebaseUser.emailVerified,
-            avatarUrl: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80'
+            avatarUrl: firebaseUser.photoURL || null
           };
           setUser(userData);
 
@@ -165,7 +169,7 @@ export const AuthProvider = ({ children }) => {
         name: firebaseUser.displayName || email.split('@')[0],
         email: firebaseUser.email,
         emailVerified: firebaseUser.emailVerified,
-        avatarUrl: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80'
+        avatarUrl: firebaseUser.photoURL || null
       };
       setUser(userData);
 
@@ -238,7 +242,7 @@ export const AuthProvider = ({ children }) => {
         name: fullName || email.split('@')[0],
         email: firebaseUser.email,
         emailVerified: false,
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80'
+        avatarUrl: null
       };
 
       setUser(userData);
@@ -255,56 +259,112 @@ export const AuthProvider = ({ children }) => {
   };
 
   /**
-   * 1-Click Sign in / Sign up with Google
+   * Connect and link a Google Account into application state
    */
-  const loginWithGoogle = async () => {
+  const connectGoogleAccount = async ({ name, email, photoURL = null }) => {
     setLoading(true);
-    setAuthError(null);
     try {
-      if (!auth || !googleProvider) throw new Error('Firebase Google Auth is not configured');
+      const trimmedName = (name || email?.split('@')[0] || 'Candidate').trim();
+      const trimmedEmail = (email || '').trim().toLowerCase();
 
-      const userCredential = await signInWithPopup(auth, googleProvider);
-      const firebaseUser = userCredential.user;
-
-      // Sync Firestore profile
-      const existingDoc = await getUserFromFirestore(firebaseUser.uid);
-      if (!existingDoc) {
-        await saveUserToFirestore(firebaseUser.uid, {
-          uid: firebaseUser.uid,
-          email: firebaseUser.email,
-          fullName: firebaseUser.displayName || 'Candidate',
-          emailVerified: true, // Google accounts are pre-verified
-          createdAt: new Date().toISOString(),
-          lastLoginAt: new Date().toISOString(),
-          provider: 'google.com',
-          profile: {
-            fullName: firebaseUser.displayName || 'Candidate',
-            targetRole: 'Full Stack Engineer',
-            skills: ['React', 'Node.js'],
-            targetCompany: 'Top Tier Tech'
-          }
-        });
-      } else {
-        await recordUserLoginInFirestore(firebaseUser.uid, firebaseUser.email);
-      }
+      setCandidateName(trimmedName);
+      try {
+        localStorage.setItem('candidate_name', trimmedName);
+        if (trimmedEmail) localStorage.setItem('candidate_email', trimmedEmail);
+        if (photoURL) {
+          localStorage.setItem('candidate_avatar', photoURL);
+        } else {
+          localStorage.removeItem('candidate_avatar');
+        }
+        window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: trimmedName }));
+      } catch (e) {}
 
       const userData = {
-        id: firebaseUser.uid,
-        uid: firebaseUser.uid,
-        name: firebaseUser.displayName || firebaseUser.email,
-        email: firebaseUser.email,
+        id: 'google_' + Date.now(),
+        uid: 'google_' + Date.now(),
+        name: trimmedName,
+        email: trimmedEmail,
         emailVerified: true,
-        avatarUrl: firebaseUser.photoURL || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=256&q=80'
+        avatarUrl: photoURL || null,
+        provider: 'google.com'
       };
 
       setUser(userData);
-      if (existingDoc?.profile) setProfile(existingDoc.profile);
+      setProfile(prev => ({
+        ...prev,
+        fullName: trimmedName
+      }));
 
       return userData;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
+   * 1-Click Sign in / Sign up with Google
+   */
+  const loginWithGoogle = async (directCredentials = null) => {
+    if (directCredentials) {
+      return await connectGoogleAccount(directCredentials);
+    }
+
+    setLoading(true);
+    setAuthError(null);
+    try {
+      if (auth && googleProvider) {
+        try {
+          const userCredential = await signInWithPopup(auth, googleProvider);
+          const firebaseUser = userCredential.user;
+
+          const googleName = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Candidate';
+          const googleEmail = firebaseUser.email;
+          const googlePhoto = firebaseUser.photoURL || null;
+
+          // Sync Firestore profile if available
+          try {
+            const existingDoc = await getUserFromFirestore(firebaseUser.uid);
+            if (!existingDoc) {
+              await saveUserToFirestore(firebaseUser.uid, {
+                uid: firebaseUser.uid,
+                email: googleEmail,
+                fullName: googleName,
+                emailVerified: true,
+                createdAt: new Date().toISOString(),
+                lastLoginAt: new Date().toISOString(),
+                provider: 'google.com',
+                profile: {
+                  fullName: googleName,
+                  targetRole: 'Full Stack Engineer',
+                  skills: ['React', 'Node.js'],
+                  targetCompany: 'Top Tier Tech'
+                }
+              });
+            } else {
+              await recordUserLoginInFirestore(firebaseUser.uid, googleEmail);
+            }
+          } catch (fsErr) {
+            console.warn('Firestore sync notice:', fsErr);
+          }
+
+          return await connectGoogleAccount({
+            name: googleName,
+            email: googleEmail,
+            photoURL: googlePhoto
+          });
+        } catch (popupErr) {
+          console.warn('Firebase Google Auth notice:', popupErr?.code || popupErr?.message);
+          openGoogleModal();
+          return null;
+        }
+      } else {
+        openGoogleModal();
+        return null;
+      }
     } catch (err) {
       console.error('Google Sign In error:', err);
-      setAuthError(err.message);
-      throw err;
+      openGoogleModal();
+      return null;
     } finally {
       setLoading(false);
     }
@@ -401,6 +461,10 @@ export const AuthProvider = ({ children }) => {
       login,
       register,
       loginWithGoogle,
+      connectGoogleAccount,
+      isGoogleModalOpen,
+      openGoogleModal,
+      closeGoogleModal,
       resendVerificationEmail,
       checkEmailVerificationStatus,
       resetPassword,

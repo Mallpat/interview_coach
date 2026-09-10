@@ -92,10 +92,20 @@ export const Dashboard = () => {
             fontWeight: 800,
             fontSize: '1rem',
             cursor: 'pointer',
-            boxShadow: '0 0 15px rgba(0, 245, 160, 0.2)'
+            boxShadow: '0 0 15px rgba(0, 245, 160, 0.2)',
+            overflow: 'hidden',
+            flexShrink: 0
           }}
         >
-          {avatarInitial}
+          {(user?.avatarUrl || localStorage.getItem('candidate_avatar')) ? (
+            <img
+              src={user?.avatarUrl || localStorage.getItem('candidate_avatar')}
+              alt={candidateName}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          ) : (
+            avatarInitial
+          )}
         </div>
       </div>
 

@@ -10,6 +10,7 @@ import { SignupPage } from './pages/auth/SignupPage';
 import { LoginPage } from './pages/auth/LoginPage';
 import { ForgotPasswordPage } from './pages/auth/ForgotPasswordPage';
 import { EmailVerificationPage } from './pages/auth/EmailVerificationPage';
+import { GoogleConnectModal } from './components/GoogleConnectModal';
 
 // Screen 5: Profile Setup
 import { ProfileSetupPage } from './pages/profile/ProfileSetupPage';
@@ -46,14 +47,6 @@ import { AdminPanel } from './pages/admin/AdminPanel';
 
 // Screen 22: Profile & Settings
 import { Profile } from './pages/profile/Profile';
-
-const RootEntry = () => {
-  const candidateName = localStorage.getItem('candidate_name');
-  if (!candidateName) {
-    return <Navigate to="/get-started" replace />;
-  }
-  return <Dashboard />;
-};
 
 const MobileAppShell = () => {
   const [isSimulator, setIsSimulator] = useState(true);
@@ -144,7 +137,7 @@ const MobileAppShell = () => {
             <Route path="/profile-setup" element={<ProfileSetupPage />} />
 
             {/* Screen 1: Get Started & Root Entry */}
-            <Route path="/" element={<RootEntry />} />
+            <Route path="/" element={<GetStartedPage />} />
             <Route path="/get-started" element={<GetStartedPage />} />
             <Route path="/dashboard" element={<Dashboard />} />
 
@@ -224,6 +217,9 @@ const MobileAppShell = () => {
 
       {/* Floating 21 Screens Quick Navigator */}
       <ScreenNavigator />
+
+      {/* Global Google Account Connection Modal */}
+      <GoogleConnectModal />
     </div>
   );
 };

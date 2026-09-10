@@ -101,15 +101,16 @@ export const SignupPage = () => {
     try {
       if (loginWithGoogle) {
         const loggedUser = await loginWithGoogle();
-        const googleName = loggedUser?.name || '';
-        if (googleName && setCandidateName) setCandidateName(googleName);
-        navigate('/profile-setup', {
-          state: { fullName: googleName || localStorage.getItem('candidate_name') || '' }
-        });
+        if (loggedUser) {
+          const googleName = loggedUser.name || '';
+          if (googleName && setCandidateName) setCandidateName(googleName);
+          navigate('/profile-setup', {
+            state: { fullName: googleName || localStorage.getItem('candidate_name') || '' }
+          });
+        }
       }
     } catch (err) {
       console.warn('Google sign up notice:', err);
-      setError(err?.message?.includes('popup-closed') ? 'Sign up popup was closed.' : 'Google sign-up failed. Try email/password.');
     } finally {
       setGoogleLoading(false);
     }

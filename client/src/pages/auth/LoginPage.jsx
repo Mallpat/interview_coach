@@ -64,12 +64,13 @@ export const LoginPage = () => {
     setGoogleLoading(true);
     try {
       if (loginWithGoogle) {
-        await loginWithGoogle();
-        navigate('/dashboard');
+        const res = await loginWithGoogle();
+        if (res) {
+          navigate('/dashboard');
+        }
       }
     } catch (err) {
       console.warn('Google login notice:', err);
-      setError(err?.message?.includes('popup-closed') ? 'Sign-in window was closed.' : 'Google login unavailable. Please use email & password.');
     } finally {
       setGoogleLoading(false);
     }

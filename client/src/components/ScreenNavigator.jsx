@@ -32,9 +32,9 @@ export const ScreenNavigator = () => {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
 
-  // Find active screen index
-  const currentPath = location.pathname === '/' ? '/dashboard' : location.pathname;
-  const currentIndex = SCREENS.findIndex(s => s.path === currentPath || (s.path === '/dashboard' && location.pathname === '/'));
+  // Find active screen index (Screen 1: Get Started on root entry)
+  const currentPath = location.pathname === '/' ? '/get-started' : location.pathname;
+  const currentIndex = SCREENS.findIndex(s => s.path === currentPath);
   const currentScreen = SCREENS[currentIndex !== -1 ? currentIndex : 0];
 
   const handlePrev = (e) => {

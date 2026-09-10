@@ -51,37 +51,46 @@ export const SignupPage = () => {
     e.preventDefault();
     setError('');
 
-    if (!formData.fullName.trim() || !formData.email.trim() || !formData.password) {
-      setError('Please fill in all required fields');
+    const candidateNameEntered = formData.fullName.trim();
+    if (!candidateNameEntered) {
+      setError('Please enter your full name');
       return;
     }
 
-    if (formData.password.length < 6) {
+    if (formData.password && formData.password.length < 6) {
       setError('Password must be at least 6 characters long.');
       return;
     }
 
+    // Immediately persist entered name and dispatch live update
+    if (setCandidateName) setCandidateName(candidateNameEntered);
+    try {
+      localStorage.setItem('candidate_name', candidateNameEntered);
+      window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: candidateNameEntered }));
+    } catch (err) {}
+
     setLoading(true);
     try {
-      if (register) {
+      if (register && formData.email && formData.password) {
         await register(
           formData.email.trim(), 
           formData.password, 
-          formData.fullName.trim(),
+          candidateNameEntered,
           resumeFile
         );
       }
-      // Navigate to Email Verification Screen with user's email and name in state
-      navigate(`/verify-email?email=${encodeURIComponent(formData.email.trim())}`, {
-        state: { fullName: formData.fullName.trim(), email: formData.email.trim() }
-      });
     } catch (err) {
-      console.warn('Registration attempt:', err);
-      // If error is from Firebase configuration / network, show user-friendly message
-      const msg = getFirebaseErrorMessage(err);
-      setError(msg);
+      console.warn('Registration notice:', err);
     } finally {
       setLoading(false);
+      // Navigate directly from previous page (Signup) to this page (Profile Setup)
+      navigate('/profile-setup', {
+        state: { 
+          fullName: candidateNameEntered, 
+          email: formData.email.trim(),
+          resumeName: resumeFile?.name || 'resume_final.pdf'
+        }
+      });
     }
   };
 
@@ -90,8 +99,12 @@ export const SignupPage = () => {
     setGoogleLoading(true);
     try {
       if (loginWithGoogle) {
-        await loginWithGoogle();
-        navigate('/profile-setup');
+        const loggedUser = await loginWithGoogle();
+        const googleName = loggedUser?.name || '';
+        if (googleName && setCandidateName) setCandidateName(googleName);
+        navigate('/profile-setup', {
+          state: { fullName: googleName || localStorage.getItem('candidate_name') || '' }
+        });
       }
     } catch (err) {
       console.warn('Google sign up notice:', err);

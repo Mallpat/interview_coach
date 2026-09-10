@@ -11,20 +11,28 @@ export const ProfileSetupPage = () => {
   // Pick up name passed from SignupPage, localStorage, AuthContext, or location state
   const getActiveCandidateName = () => {
     try {
-      if (candidateName && !isInvalidOrAnanya(candidateName)) {
-        return candidateName;
-      }
-      const fromStorage = localStorage.getItem('candidate_name');
-      if (fromStorage && !isInvalidOrAnanya(fromStorage)) {
-        return fromStorage;
-      }
+      // 1. Direct state passed from the previous page (SignupPage)
       const fromState = location.state?.fullName;
-      if (fromState && !isInvalidOrAnanya(fromState)) {
-        return fromState;
+      if (fromState && typeof fromState === 'string' && fromState.trim() && !isInvalidOrAnanya(fromState)) {
+        return fromState.trim();
       }
+      // 2. Candidate name saved in localStorage
+      const fromStorage = localStorage.getItem('candidate_name');
+      if (fromStorage && typeof fromStorage === 'string' && fromStorage.trim() && !isInvalidOrAnanya(fromStorage)) {
+        return fromStorage.trim();
+      }
+      // 3. AuthContext state
+      if (candidateName && typeof candidateName === 'string' && candidateName.trim() && !isInvalidOrAnanya(candidateName)) {
+        return candidateName.trim();
+      }
+      // 4. Authenticated user profile
       const fromUser = user?.name;
-      if (fromUser && !isInvalidOrAnanya(fromUser)) {
-        return fromUser;
+      if (fromUser && typeof fromUser === 'string' && fromUser.trim() && !isInvalidOrAnanya(fromUser)) {
+        return fromUser.trim();
+      }
+      const fromProfile = profile?.fullName;
+      if (fromProfile && typeof fromProfile === 'string' && fromProfile.trim() && !isInvalidOrAnanya(fromProfile)) {
+        return fromProfile.trim();
       }
     } catch (e) {}
     return '';
@@ -36,11 +44,31 @@ export const ProfileSetupPage = () => {
   const [newSkill, setNewSkill] = useState('');
   const [isAddingSkill, setIsAddingSkill] = useState(false);
 
+  // Clear any legacy cached mock names on mount
+  useEffect(() => {
+    try {
+      const stored = localStorage.getItem('candidate_name');
+      if (stored && isInvalidOrAnanya(stored)) {
+        localStorage.removeItem('candidate_name');
+      }
+    } catch (e) {}
+  }, []);
+
   // Reactively sync state whenever location state, user, or storage updates
   useEffect(() => {
-    const currentName = getActiveCandidateName();
-    if (currentName && fullName !== currentName) {
-      setFullName(currentName);
+    const fromPreviousPage = location.state?.fullName;
+    if (fromPreviousPage && typeof fromPreviousPage === 'string' && fromPreviousPage.trim() && !isInvalidOrAnanya(fromPreviousPage)) {
+      const validName = fromPreviousPage.trim();
+      setFullName(validName);
+      if (setCandidateName) setCandidateName(validName);
+      try {
+        localStorage.setItem('candidate_name', validName);
+      } catch (e) {}
+    } else {
+      const currentName = getActiveCandidateName();
+      if (currentName && fullName !== currentName) {
+        setFullName(currentName);
+      }
     }
   }, [location.state, user, profile, candidateName]);
 
@@ -62,6 +90,7 @@ export const ProfileSetupPage = () => {
 
   const avatarInitial = (
     fullName?.trim()?.charAt(0) || 
+    location.state?.fullName?.trim()?.charAt(0) || 
     candidateName?.trim()?.charAt(0) || 
     user?.name?.trim()?.charAt(0) || 
     'U'

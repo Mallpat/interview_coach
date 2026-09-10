@@ -40,13 +40,15 @@ export const ScreenNavigator = () => {
   const handlePrev = (e) => {
     e.stopPropagation();
     const prevIdx = (currentIndex - 1 + SCREENS.length) % SCREENS.length;
-    navigate(SCREENS[prevIdx].path);
+    const currentName = localStorage.getItem('candidate_name') || '';
+    navigate(SCREENS[prevIdx].path, { state: { fullName: currentName } });
   };
 
   const handleNext = (e) => {
     e.stopPropagation();
     const nextIdx = (currentIndex + 1) % SCREENS.length;
-    navigate(SCREENS[nextIdx].path);
+    const currentName = localStorage.getItem('candidate_name') || '';
+    navigate(SCREENS[nextIdx].path, { state: { fullName: currentName } });
   };
 
   return (
@@ -112,7 +114,8 @@ export const ScreenNavigator = () => {
                 <button
                   key={screen.id}
                   onClick={() => {
-                    navigate(screen.path);
+                    const currentName = localStorage.getItem('candidate_name') || '';
+                    navigate(screen.path, { state: { fullName: currentName } });
                     setIsOpen(false);
                   }}
                   style={{

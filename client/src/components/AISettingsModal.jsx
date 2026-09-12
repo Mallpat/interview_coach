@@ -50,7 +50,12 @@ export const AISettingsModal = ({ isOpen, onClose }) => {
     try {
       const res = await api.validateGeminiKey(apiKey.trim());
       if (res.valid) {
-        setValidationResult({ valid: true, message: 'Valid! Successfully connected to Google Gemini API.' });
+        const lat = res.latencyMs ? ` in ${res.latencyMs}ms` : '';
+        const modelName = res.model || 'gemini-2.5-flash';
+        setValidationResult({ 
+          valid: true, 
+          message: `Connected to Google Gemini (${modelName})${lat}! All AI modules are active.` 
+        });
       } else {
         setValidationResult({ valid: false, message: res.error || 'Invalid API key or network error.' });
       }
@@ -146,6 +151,29 @@ export const AISettingsModal = ({ isOpen, onClose }) => {
           >
             <X size={16} />
           </button>
+        </div>
+
+        {/* Quick Instructions Banner */}
+        <div style={{
+          background: 'rgba(0, 242, 254, 0.05)',
+          border: '1px solid rgba(0, 242, 254, 0.2)',
+          borderRadius: '12px',
+          padding: '0.75rem 0.9rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '4px',
+          fontSize: '0.75rem',
+          color: '#CBD5E1'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#00F2FE', fontWeight: 700 }}>
+            <Sparkles size={14} />
+            <span>How to get your free Gemini API Key (takes 30 seconds):</span>
+          </div>
+          <ol style={{ paddingLeft: '1.2rem', margin: '0.25rem 0 0 0', lineHeight: 1.5, color: '#94A3B8' }}>
+            <li>Open <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer" style={{ color: '#00F2FE', textDecoration: 'underline' }}>Google AI Studio (aistudio.google.com)</a>.</li>
+            <li>Click <strong>"Create API Key"</strong> and copy the generated key.</li>
+            <li>Paste the key below and click <strong>"Test & Validate Key"</strong>.</li>
+          </ol>
         </div>
 
         {/* API Key Input */}

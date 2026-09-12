@@ -14,6 +14,7 @@ export const validateGeminiKey = async (apiKey) => {
   if (!apiKey || !apiKey.trim()) {
     throw new Error('API key is empty');
   }
+  const start = Date.now();
   try {
     const ai = new GoogleGenAI({ apiKey: apiKey.trim() });
     const response = await ai.models.generateContent({
@@ -21,7 +22,13 @@ export const validateGeminiKey = async (apiKey) => {
       contents: 'Ping test. Reply with OK.',
       config: { maxOutputTokens: 10 }
     });
-    return { valid: true, response: response.text?.trim() || 'OK' };
+    const latencyMs = Date.now() - start;
+    return { 
+      valid: true, 
+      model: 'gemini-2.5-flash',
+      latencyMs,
+      response: response.text?.trim() || 'OK' 
+    };
   } catch (err) {
     return { valid: false, error: err.message };
   }
@@ -31,8 +38,8 @@ export const validateGeminiKey = async (apiKey) => {
 /**
  * Generate a dynamic interview question tailored to role, seniority and context
  */
-export const generateQuestion = async ({ role, difficulty, type, questionIndex = 1, previousContext = [] }) => {
-  const gemini = getGeminiClient();
+export const generateQuestion = async ({ role, difficulty, type, questionIndex = 1, previousContext = [], apiKey }) => {
+  const gemini = getGeminiClient(apiKey);
 
   if (gemini) {
     try {
@@ -78,8 +85,8 @@ Return your response in valid JSON format:
 /**
  * Evaluate candidate transcript and metrics with structured scoring
  */
-export const evaluateAnswer = async ({ question, transcript, role, difficulty, category, videoMetrics = {}, fillerWordCount = 0 }) => {
-  const gemini = getGeminiClient();
+export const evaluateAnswer = async ({ question, transcript, role, difficulty, category, videoMetrics = {}, fillerWordCount = 0, apiKey }) => {
+  const gemini = getGeminiClient(apiKey);
 
   if (gemini && transcript && transcript.trim().length > 15) {
     try {
@@ -242,8 +249,8 @@ Would you like me to drill you on a specific technical concept or behavioral pro
 /**
  * AI Code Complexity & Optimization Review
  */
-export const reviewCodeSubmission = async ({ challengeTitle, code, testResults }) => {
-  const gemini = getGeminiClient();
+export const reviewCodeSubmission = async ({ challengeTitle, code, testResults, apiKey }) => {
+  const gemini = getGeminiClient(apiKey);
 
   if (gemini) {
     try {
@@ -291,3 +298,47 @@ Provide brief code review in JSON:
       : "Ensure memory usage is minimized by avoiding redundant object allocations in loops."
   };
 };
+
+/**
+ * AI-powered Deep Resume ATS & Role Alignment Analysis
+ */
+export const analyzeResumeWithGemini = async ({ resumeText, targetRole, apiKey }) => {
+  const gemini = getGeminiClient(apiKey);
+  if (!gemini || !resumeText || resumeText.length < 50) return null;
+
+  try {
+    const prompt = `You are an elite Technical Recruiter and ATS Specialist analyzing a candidate's resume for the role: "${targetRole || 'Full Stack Engineer'}".
+Resume Text:
+"""
+${resumeText.slice(0, 4000)}
+"""
+
+Evaluate this resume thoroughly. Return your analysis in JSON format:
+{
+  "atsScore": number (0 to 100),
+  "executiveSummary": "2-3 sentences summarizing candidate profile and fit",
+  "strengths": ["specific strength 1", "specific strength 2", "specific strength 3"],
+  "improvements": ["concrete action item 1", "concrete action item 2", "concrete action item 3"],
+  "missingKeywords": ["keyword1", "keyword2", "keyword3"],
+  "recommendedActionVerbs": ["verb1", "verb2"],
+  "bulletPointRewrites": [
+    {
+      "original": "example weak or passive bullet from resume",
+      "optimized": "high-impact STAR version with metrics"
+    }
+  ]
+}`;
+
+    const response = await gemini.models.generateContent({
+      model: 'gemini-2.5-flash',
+      contents: prompt,
+      config: { responseMimeType: 'application/json' }
+    });
+
+    return JSON.parse(response.text);
+  } catch (err) {
+    console.warn('Gemini resume analysis fallback:', err.message);
+    return null;
+  }
+};
+

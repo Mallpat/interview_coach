@@ -38,6 +38,7 @@ export const getChallenge = (req, res) => {
 export const submitSolution = async (req, res) => {
   try {
     const { challengeId, code, language = 'javascript' } = req.body;
+    const apiKey = req.headers['x-gemini-api-key'] || req.body.apiKey;
 
     if (!challengeId || !code) {
       return res.status(400).json({ error: 'ChallengeId and code are required' });
@@ -55,7 +56,8 @@ export const submitSolution = async (req, res) => {
     const aiReview = await reviewCodeSubmission({
       challengeTitle: challenge.title,
       code,
-      testResults: runResult
+      testResults: runResult,
+      apiKey
     });
 
     // Save submission

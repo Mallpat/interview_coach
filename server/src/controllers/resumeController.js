@@ -1,10 +1,12 @@
 import { db } from '../services/db.js';
 import { parsePdfBuffer, analyzeResumeContent, matchResumeWithJD } from '../services/resumeService.js';
+import { analyzeResumeWithGemini } from '../services/aiService.js';
 
 export const analyzeResume = async (req, res) => {
   try {
     let text = '';
     let fileName = 'Pasted_Resume.txt';
+    const apiKey = req.headers['x-gemini-api-key'] || req.body.apiKey;
 
     if (req.file) {
       fileName = req.file.originalname;
@@ -25,6 +27,23 @@ export const analyzeResume = async (req, res) => {
     const targetRole = req.body.targetRole || 'Full Stack Engineer';
     const analysis = analyzeResumeContent(text, targetRole);
 
+    // If Gemini key is available, run deep LLM resume critique
+    const aiInsight = await analyzeResumeWithGemini({ resumeText: text, targetRole, apiKey });
+    if (aiInsight) {
+      analysis.aiPowered = true;
+      if (aiInsight.atsScore) {
+        analysis.atsScore = Math.round((analysis.atsScore * 0.4) + (aiInsight.atsScore * 0.6));
+      }
+      if (aiInsight.executiveSummary) analysis.executiveSummary = aiInsight.executiveSummary;
+      if (aiInsight.bulletPointRewrites) analysis.bulletPointRewrites = aiInsight.bulletPointRewrites;
+      if (aiInsight.strengths?.length) {
+        analysis.strengths = Array.from(new Set([...aiInsight.strengths, ...analysis.strengths])).slice(0, 5);
+      }
+      if (aiInsight.improvements?.length) {
+        analysis.improvements = Array.from(new Set([...aiInsight.improvements, ...analysis.improvements])).slice(0, 5);
+      }
+    }
+
     const savedResume = db.createResume({
       id: `resume-${Date.now()}`,
       userId: req.user.id,
@@ -34,7 +53,9 @@ export const analyzeResume = async (req, res) => {
       atsScore: analysis.atsScore,
       atsFeedback: JSON.stringify({
         strengths: analysis.strengths,
-        improvements: analysis.improvements
+        improvements: analysis.improvements,
+        executiveSummary: analysis.executiveSummary || null,
+        bulletPointRewrites: analysis.bulletPointRewrites || []
       }),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()

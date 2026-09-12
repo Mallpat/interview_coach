@@ -4,6 +4,7 @@ import { generateQuestion, evaluateAnswer } from '../services/aiService.js';
 export const createSession = async (req, res) => {
   try {
     const { role = 'Full Stack Engineer', difficulty = 'Senior', type = 'Technical & Behavioral', totalQuestions = 3 } = req.body;
+    const apiKey = req.headers['x-gemini-api-key'] || req.body.apiKey;
 
     const session = db.createSession({
       id: `session-${Date.now()}`,
@@ -22,7 +23,8 @@ export const createSession = async (req, res) => {
       role,
       difficulty,
       type,
-      questionIndex: 1
+      questionIndex: 1,
+      apiKey
     });
 
     const question1 = db.createQuestion({
@@ -70,6 +72,7 @@ export const submitAnswer = async (req, res) => {
   try {
     const { id } = req.params;
     const { questionId, transcript, durationSeconds = 30, fillerWordCount = 0, videoMetrics = {}, audioMetrics = {} } = req.body;
+    const apiKey = req.headers['x-gemini-api-key'] || req.body.apiKey;
 
     const session = db.findSessionById(id);
     if (!session) return res.status(404).json({ error: 'Session not found' });
@@ -85,7 +88,8 @@ export const submitAnswer = async (req, res) => {
       difficulty: session.difficulty,
       category: currentQ.category,
       videoMetrics,
-      fillerWordCount
+      fillerWordCount,
+      apiKey
     });
 
     // Save Answer
@@ -153,7 +157,8 @@ export const submitAnswer = async (req, res) => {
         difficulty: session.difficulty,
         type: session.type,
         questionIndex: nextIndex,
-        previousContext: [{ question: currentQ.question, answer: transcript }]
+        previousContext: [{ question: currentQ.question, answer: transcript }],
+        apiKey
       });
 
       const nextQuestion = db.createQuestion({

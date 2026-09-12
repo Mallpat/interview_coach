@@ -42,7 +42,11 @@ export const MobileTopBar = ({ isSimulator, setIsSimulator }) => {
     }
   };
 
-  const hasApiKey = Boolean(localStorage.getItem('gemini_api_key'));
+  const [hasApiKey, setHasApiKey] = useState(Boolean(localStorage.getItem('gemini_api_key')));
+
+  const refreshKeyStatus = () => {
+    setHasApiKey(Boolean(localStorage.getItem('gemini_api_key')));
+  };
 
   return (
     <>
@@ -101,22 +105,40 @@ export const MobileTopBar = ({ isSimulator, setIsSimulator }) => {
           <button
             onClick={() => setIsAISettingsOpen(true)}
             style={{
-              background: 'rgba(0, 245, 160, 0.08)',
-              border: '1px solid rgba(0, 245, 160, 0.3)',
+              background: hasApiKey ? 'rgba(0, 245, 160, 0.12)' : 'rgba(0, 242, 254, 0.08)',
+              border: hasApiKey ? '1px solid rgba(0, 245, 160, 0.4)' : '1px solid rgba(0, 242, 254, 0.3)',
               borderRadius: '8px',
-              padding: '0.25rem 0.5rem',
-              color: '#00F5A0',
+              padding: '0.25rem 0.55rem',
+              color: hasApiKey ? '#00F5A0' : '#00F2FE',
               fontSize: '0.68rem',
               fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
-              gap: '4px',
-              cursor: 'pointer'
+              gap: '5px',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease',
+              boxShadow: hasApiKey ? '0 0 10px rgba(0, 245, 160, 0.15)' : 'none'
             }}
-            title="Configure Gemini AI Persona & API Key"
+            title={hasApiKey ? "Gemini API Key Active (Click to edit)" : "Configure Gemini AI Persona & API Key"}
           >
-            <Key size={12} />
-            <span>AI Key</span>
+            {hasApiKey ? (
+              <>
+                <span style={{
+                  width: '6px',
+                  height: '6px',
+                  borderRadius: '50%',
+                  background: '#00F5A0',
+                  boxShadow: '0 0 6px #00F5A0',
+                  display: 'inline-block'
+                }} />
+                <span>Gemini Active</span>
+              </>
+            ) : (
+              <>
+                <Key size={12} />
+                <span>+ Add AI Key</span>
+              </>
+            )}
           </button>
 
           <button
@@ -141,7 +163,10 @@ export const MobileTopBar = ({ isSimulator, setIsSimulator }) => {
 
       <AISettingsModal
         isOpen={isAISettingsOpen}
-        onClose={() => setIsAISettingsOpen(false)}
+        onClose={() => {
+          setIsAISettingsOpen(false);
+          refreshKeyStatus();
+        }}
       />
     </>
   );

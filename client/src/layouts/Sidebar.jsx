@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -9,12 +9,20 @@ import {
   BarChart3, 
   UserCircle,
   Sparkles,
-  Zap
+  Zap,
+  Key
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { AISettingsModal } from '../components/AISettingsModal';
 
 export const Sidebar = () => {
   const { user, profile, candidateName } = useAuth();
+  const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
+  const [hasApiKey, setHasApiKey] = useState(Boolean(localStorage.getItem('gemini_api_key')));
+
+  const refreshKeyStatus = () => {
+    setHasApiKey(Boolean(localStorage.getItem('gemini_api_key')));
+  };
 
   const navItems = [
     { to: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -155,6 +163,43 @@ export const Sidebar = () => {
             <span style={{ fontSize: '0.7rem', color: '#6EE7B7', fontWeight: 600 }}>Senior Track</span>
           </div>
         </div>
+
+        {/* Gemini AI Key Status Card */}
+        <button
+          onClick={() => setIsAISettingsOpen(true)}
+          style={{
+            width: '100%',
+            marginTop: '0.5rem',
+            background: hasApiKey ? 'rgba(0, 245, 160, 0.08)' : 'rgba(0, 242, 254, 0.05)',
+            border: hasApiKey ? '1px solid rgba(0, 245, 160, 0.3)' : '1px solid rgba(0, 242, 254, 0.2)',
+            borderRadius: '12px',
+            padding: '0.65rem 0.85rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Key size={15} color={hasApiKey ? "#00F5A0" : "#00F2FE"} />
+            <div style={{ textAlign: 'left' }}>
+              <p style={{ fontSize: '0.78rem', fontWeight: 700, color: '#FFF' }}>
+                Gemini API Key
+              </p>
+              <span style={{ fontSize: '0.68rem', color: hasApiKey ? '#6EE7B7' : '#94A3B8' }}>
+                {hasApiKey ? 'Connected & Active' : 'Click to configure'}
+              </span>
+            </div>
+          </div>
+          <span style={{
+            width: '8px',
+            height: '8px',
+            borderRadius: '50%',
+            background: hasApiKey ? '#00F5A0' : '#F59E0B',
+            boxShadow: hasApiKey ? '0 0 8px #00F5A0' : 'none'
+          }} />
+        </button>
       </div>
 
       {/* User Footer */}
@@ -214,6 +259,14 @@ export const Sidebar = () => {
           </div>
         );
       })()}
+
+      <AISettingsModal
+        isOpen={isAISettingsOpen}
+        onClose={() => {
+          setIsAISettingsOpen(false);
+          refreshKeyStatus();
+        }}
+      />
     </aside>
   );
 };

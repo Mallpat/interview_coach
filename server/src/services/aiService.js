@@ -1,10 +1,12 @@
 import { GoogleGenAI } from '@google/genai';
 import { QUESTION_BANK } from '../data/questions.js';
 
+const GEMINI_PRIMARY_MODEL = 'gemini-3.6-flash';
+
 const getGeminiClient = (customApiKey) => {
   const apiKey = customApiKey || process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
-  return new GoogleGenAI({ apiKey });
+  return new GoogleGenAI({ apiKey: apiKey.trim() });
 };
 
 /**
@@ -14,20 +16,21 @@ export const validateGeminiKey = async (apiKey) => {
   if (!apiKey || !apiKey.trim()) {
     throw new Error('API key is empty');
   }
+  const cleanKey = apiKey.trim();
   const start = Date.now();
   try {
-    const ai = new GoogleGenAI({ apiKey: apiKey.trim() });
+    const ai = new GoogleGenAI({ apiKey: cleanKey });
     const response = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: 'Ping test. Reply with OK.',
-      config: { maxOutputTokens: 10 }
+      model: GEMINI_PRIMARY_MODEL,
+      contents: 'Ping test. Reply with OK.'
     });
     const latencyMs = Date.now() - start;
+    const reply = response.text?.trim() || response.candidates?.[0]?.content?.parts?.find(p => p.text)?.text || 'OK';
     return { 
       valid: true, 
-      model: 'gemini-2.5-flash',
+      model: GEMINI_PRIMARY_MODEL,
       latencyMs,
-      response: response.text?.trim() || 'OK' 
+      response: reply
     };
   } catch (err) {
     return { valid: false, error: err.message };
@@ -59,7 +62,7 @@ Return your response in valid JSON format:
 }`;
 
       const response = await gemini.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: GEMINI_PRIMARY_MODEL,
         contents: prompt,
         config: { responseMimeType: 'application/json' }
       });
@@ -117,7 +120,7 @@ Provide structured evaluation in JSON with realistic scores (0-100):
 }`;
 
       const response = await gemini.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: GEMINI_PRIMARY_MODEL,
         contents: prompt,
         config: { responseMimeType: 'application/json' }
       });
@@ -189,7 +192,7 @@ Provide crisp, encouraging, actionable, and concrete advice. Use markdown format
       }));
 
       const response = await gemini.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: GEMINI_PRIMARY_MODEL,
         contents,
         config: { systemInstruction }
       });
@@ -271,7 +274,7 @@ Provide brief code review in JSON:
 }`;
 
       const response = await gemini.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: GEMINI_PRIMARY_MODEL,
         contents: prompt,
         config: { responseMimeType: 'application/json' }
       });
@@ -330,7 +333,7 @@ Evaluate this resume thoroughly. Return your analysis in JSON format:
 }`;
 
     const response = await gemini.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: GEMINI_PRIMARY_MODEL,
       contents: prompt,
       config: { responseMimeType: 'application/json' }
     });

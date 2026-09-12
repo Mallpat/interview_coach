@@ -35,7 +35,7 @@ app.get('/api/health', (req, res) => {
     status: 'healthy',
     service: 'AI Interview Coach Backend API',
     timestamp: new Date().toISOString(),
-    aiEngine: process.env.GEMINI_API_KEY ? 'Gemini 2.5 Flash' : 'Smart Heuristic Engine'
+    aiEngine: process.env.GEMINI_API_KEY ? 'Gemini 3.6 Flash' : 'Smart Heuristic Engine'
   });
 });
 

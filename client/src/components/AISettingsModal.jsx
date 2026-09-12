@@ -204,7 +204,7 @@ export const AISettingsModal = ({ isOpen, onClose }) => {
               type={showKey ? 'text' : 'password'}
               value={apiKey}
               onChange={(e) => { setApiKey(e.target.value); setValidationResult(null); }}
-              placeholder="AIzaSy..."
+              placeholder="AQ... or AIzaSy..."
               style={{
                 width: '100%',
                 padding: '0.65rem 2.25rem 0.65rem 0.85rem',

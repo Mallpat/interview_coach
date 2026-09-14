@@ -10,14 +10,14 @@ import {
   serverTimestamp 
 } from 'firebase/firestore';
 
-// Real configuration for AntiinterviewCoach
+// Firebase Client Configuration (Loaded securely from local environment variables)
 const firebaseConfig = {
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyBzUdUpKRSR1aKmyJTcfKxRczP1XmBnW-c",
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "",
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "antiinterviewcoach.firebaseapp.com",
   projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "antiinterviewcoach",
   storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "antiinterviewcoach.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "781594878734",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:781594878734:web:d87e6ca593653ee048ed5f"
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || ""
 };
 
 let app = null;

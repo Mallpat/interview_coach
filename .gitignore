@@ -14,9 +14,10 @@ client/android/build/
 client/android/app/build/
 
 # Environment Variables & Secrets
-.env
-.env.local
+.env*
 *.env
+client/.env*
+server/.env*
 
 # IDE, OS & Temp
 .DS_Store

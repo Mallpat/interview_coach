@@ -51,6 +51,13 @@ import { Profile } from './pages/profile/Profile';
 const MobileAppShell = () => {
   const [isSimulator, setIsSimulator] = useState(true);
 
+  React.useEffect(() => {
+    const envKey = import.meta.env.VITE_GEMINI_API_KEY;
+    if (envKey && !localStorage.getItem('gemini_api_key')) {
+      localStorage.setItem('gemini_api_key', envKey.trim());
+    }
+  }, []);
+
   return (
     <div style={{
       minHeight: '100vh',

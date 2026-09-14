@@ -43,7 +43,7 @@ export const CareerMentor = () => {
 
     try {
       const activePersona = localStorage.getItem('mentor_persona') || persona;
-      const res = await api.sendMentorMessage(text, activePersona);
+      const res = await api.sendMentorMessage(text, activePersona, messages);
       const reply = res.assistantMessage?.content || res.reply || "I'm analyzing your request. Keep refining your approach!";
       setMessages((prev) => [...prev, { sender: 'ai', text: reply }]);
     } catch (err) {

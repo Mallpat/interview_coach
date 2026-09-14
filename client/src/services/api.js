@@ -1,3 +1,5 @@
+import { chatWithGeminiDirect, validateGeminiKeyDirect } from './geminiDirectService';
+
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 
 const getHeaders = (isMultipart = false) => {
@@ -203,21 +205,50 @@ export const api = {
     return handleResponse(res);
   },
 
-  sendMentorMessage: async (content, personality) => {
-    const res = await fetch(`${API_BASE}/mentor/messages`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ content, personality })
+  sendMentorMessage: async (content, personality, history = []) => {
+    try {
+      const res = await fetch(`${API_BASE}/mentor/messages`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ content, personality })
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+      console.warn(`Backend mentor chat returned HTTP ${res.status}. Falling back to direct Gemini.`);
+    } catch (networkErr) {
+      console.warn('Backend server not reachable. Falling back to direct Gemini:', networkErr.message);
+    }
+
+    // Direct Gemini 3.6 Flash fallback
+    const directReply = await chatWithGeminiDirect({
+      message: content,
+      persona: personality,
+      history
     });
-    return handleResponse(res);
+
+    return {
+      assistantMessage: {
+        content: directReply
+      },
+      reply: directReply
+    };
   },
 
   validateGeminiKey: async (apiKey) => {
-    const res = await fetch(`${API_BASE}/mentor/validate-key`, {
-      method: 'POST',
-      headers: getHeaders(),
-      body: JSON.stringify({ apiKey })
-    });
-    return handleResponse(res);
+    try {
+      const res = await fetch(`${API_BASE}/mentor/validate-key`, {
+        method: 'POST',
+        headers: getHeaders(),
+        body: JSON.stringify({ apiKey })
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (networkErr) {
+      // Backend not running, validate directly
+    }
+
+    return await validateGeminiKeyDirect(apiKey);
   }
 };

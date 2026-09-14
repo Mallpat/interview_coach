@@ -71,13 +71,18 @@ export const AuthProvider = ({ children }) => {
     setUser(prev => prev ? { ...prev, name: name } : { name });
   };
 
-  // Clear any legacy mock candidate name from localStorage and sync cross-component updates
+  // Clear any legacy mock candidate details from localStorage and sync cross-component updates
   useEffect(() => {
     try {
       const stored = localStorage.getItem('candidate_name');
       if (stored && /ananya/i.test(stored)) {
         localStorage.removeItem('candidate_name');
         setCandidateNameState('');
+      }
+      const storedEmail = localStorage.getItem('candidate_email');
+      if (storedEmail && /mallpat2008@gmail\.com/i.test(storedEmail)) {
+        // Automatically purge any hardcoded test email stored on visitors' devices
+        localStorage.removeItem('candidate_email');
       }
     } catch (e) {}
 
@@ -316,7 +321,10 @@ export const AuthProvider = ({ children }) => {
     setLoading(true);
     setAuthError(null);
     try {
-      if (auth && googleProvider) {
+      const isPlaceholderFirebase = !import.meta.env.VITE_FIREBASE_API_KEY || 
+        import.meta.env.VITE_FIREBASE_API_KEY.includes('AntiInterviewCoachKey2026');
+
+      if (auth && googleProvider && !isPlaceholderFirebase) {
         try {
           const userCredential = await signInWithPopup(auth, googleProvider);
           const firebaseUser = userCredential.user;
@@ -419,6 +427,8 @@ export const AuthProvider = ({ children }) => {
     } finally {
       localStorage.removeItem('coach_token');
       localStorage.removeItem('candidate_name');
+      localStorage.removeItem('candidate_email');
+      localStorage.removeItem('candidate_avatar');
       setUser(null);
       setCandidateNameState('');
       setProfile(DEFAULT_PROFILE);

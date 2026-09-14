@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, CheckCircle, Sparkles } from 'lucide-react';
+import { X, CheckCircle, Sparkles, AlertCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
@@ -7,41 +7,61 @@ export const GoogleConnectModal = () => {
   const { isGoogleModalOpen, closeGoogleModal, connectGoogleAccount, candidateName } = useAuth();
   const navigate = useNavigate();
 
-  const savedName = candidateName || localStorage.getItem('candidate_name') || '';
-  const savedEmail = localStorage.getItem('candidate_email') || '';
+  // Clear any legacy hardcoded email or name from localStorage so other users aren't prefilled
+  const rawSavedEmail = localStorage.getItem('candidate_email') || '';
+  const cleanSavedEmail = /mallpat/i.test(rawSavedEmail) ? '' : rawSavedEmail;
+  const rawSavedName = candidateName || localStorage.getItem('candidate_name') || '';
+  const cleanSavedName = /mallhar/i.test(rawSavedName) ? '' : rawSavedName;
 
-  const [name, setName] = useState(savedName || 'Mallhar Patankar');
-  const [email, setEmail] = useState(savedEmail || 'mallpat2008@gmail.com');
+  const [name, setName] = useState(cleanSavedName);
+  const [email, setEmail] = useState(cleanSavedEmail);
+  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
   if (!isGoogleModalOpen) return null;
 
   const handleConnect = async (e) => {
     e?.preventDefault();
-    if (!name.trim() || !email.trim()) return;
+    setError('');
+
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (!trimmedName) {
+      setError('Please enter your full name.');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!trimmedEmail || !emailRegex.test(trimmedEmail)) {
+      setError('Please enter a valid Google email address.');
+      return;
+    }
 
     setLoading(true);
     try {
       await connectGoogleAccount({
-        name: name.trim(),
-        email: email.trim().toLowerCase(),
+        name: trimmedName,
+        email: trimmedEmail,
         photoURL: null
       });
       closeGoogleModal();
       navigate('/profile-setup', {
         state: {
-          fullName: name.trim(),
-          email: email.trim().toLowerCase()
+          fullName: trimmedName,
+          email: trimmedEmail
         }
       });
     } catch (err) {
       console.error('Failed to connect Google account:', err);
+      setError('Failed to connect account. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const initialLetter = (name.trim().charAt(0) || 'G').toUpperCase();
+  const initialLetter = (name.trim().charAt(0) || email.trim().charAt(0) || 'G').toUpperCase();
+  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   return (
     <div style={{
@@ -51,8 +71,8 @@ export const GoogleConnectModal = () => {
       right: 0,
       bottom: 0,
       zIndex: 10000,
-      background: 'rgba(3, 7, 18, 0.82)',
-      backdropFilter: 'blur(8px)',
+      background: 'rgba(3, 7, 18, 0.85)',
+      backdropFilter: 'blur(10px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
@@ -65,12 +85,13 @@ export const GoogleConnectModal = () => {
         padding: '1.75rem',
         width: '100%',
         maxWidth: '380px',
-        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.6), 0 0 35px rgba(0, 245, 160, 0.15)',
+        boxShadow: '0 20px 50px rgba(0, 0, 0, 0.7), 0 0 35px rgba(0, 245, 160, 0.15)',
         position: 'relative',
         animation: 'fadeIn 0.2s ease-out'
       }}>
         {/* Close button */}
         <button
+          type="button"
           onClick={closeGoogleModal}
           style={{
             position: 'absolute',
@@ -93,7 +114,7 @@ export const GoogleConnectModal = () => {
         </button>
 
         {/* Google G Header & Badge */}
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+        <div style={{ textAlign: 'center', marginBottom: '1.4rem' }}>
           <div style={{
             width: '56px',
             height: '56px',
@@ -127,9 +148,28 @@ export const GoogleConnectModal = () => {
             color: '#94A3B8',
             lineHeight: 1.45
           }}>
-            Link your Google account to calibrate your interview profile and track your progress.
+            Enter your Google credentials to create your individual interview profile.
           </p>
         </div>
+
+        {/* Error message */}
+        {error && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '0.65rem 0.85rem',
+            borderRadius: '12px',
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            color: '#F87171',
+            fontSize: '0.8rem',
+            marginBottom: '1rem'
+          }}>
+            <AlertCircle size={15} style={{ flexShrink: 0 }} />
+            <span>{error}</span>
+          </div>
+        )}
 
         {/* Form */}
         <form onSubmit={handleConnect} style={{ display: 'flex', flexDirection: 'column', gap: '0.9rem' }}>
@@ -141,14 +181,17 @@ export const GoogleConnectModal = () => {
               fontWeight: 600,
               marginBottom: '0.35rem'
             }}>
-              Google Display Name
+              Your Full Name
             </label>
             <input
               type="text"
               className="dark-input"
               value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Mallhar Patankar"
+              onChange={(e) => {
+                setName(e.target.value);
+                if (error) setError('');
+              }}
+              placeholder="e.g. Alex Johnson"
               required
               style={{
                 width: '100%',
@@ -157,7 +200,8 @@ export const GoogleConnectModal = () => {
                 background: 'rgba(255, 255, 255, 0.05)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 color: '#FFF',
-                fontSize: '0.9rem'
+                fontSize: '0.9rem',
+                outline: 'none'
               }}
             />
           </div>
@@ -170,14 +214,17 @@ export const GoogleConnectModal = () => {
               fontWeight: 600,
               marginBottom: '0.35rem'
             }}>
-              Google Email Address
+              Your Google Email Address
             </label>
             <input
               type="email"
               className="dark-input"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="e.g. yourname@gmail.com"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (error) setError('');
+              }}
+              placeholder="e.g. alex.johnson@gmail.com"
               required
               style={{
                 width: '100%',
@@ -186,53 +233,56 @@ export const GoogleConnectModal = () => {
                 background: 'rgba(255, 255, 255, 0.05)',
                 border: '1px solid rgba(255, 255, 255, 0.12)',
                 color: '#FFF',
-                fontSize: '0.9rem'
+                fontSize: '0.9rem',
+                outline: 'none'
               }}
             />
           </div>
 
-          {/* Quick Preview Badge */}
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            padding: '0.65rem 0.85rem',
-            borderRadius: '12px',
-            background: 'rgba(0, 245, 160, 0.06)',
-            border: '1px solid rgba(0, 245, 160, 0.2)',
-            marginTop: '0.2rem'
-          }}>
+          {/* Dynamic Preview Badge */}
+          {(name.trim() || email.trim()) && (
             <div style={{
-              width: '32px',
-              height: '32px',
-              borderRadius: '50%',
-              background: 'radial-gradient(circle at center, rgba(0, 245, 160, 0.3) 0%, #0D1322 80%)',
-              border: '1.5px solid #00F5A0',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              color: '#00F5A0',
-              fontWeight: 800,
-              fontSize: '0.9rem',
-              flexShrink: 0
+              gap: '10px',
+              padding: '0.65rem 0.85rem',
+              borderRadius: '12px',
+              background: 'rgba(0, 245, 160, 0.06)',
+              border: '1px solid rgba(0, 245, 160, 0.25)',
+              marginTop: '0.1rem'
             }}>
-              {initialLetter}
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#FFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {name || 'Google Candidate'}
+              <div style={{
+                width: '32px',
+                height: '32px',
+                borderRadius: '50%',
+                background: 'radial-gradient(circle at center, rgba(0, 245, 160, 0.3) 0%, #0D1322 80%)',
+                border: '1.5px solid #00F5A0',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#00F5A0',
+                fontWeight: 800,
+                fontSize: '0.9rem',
+                flexShrink: 0
+              }}>
+                {initialLetter}
               </div>
-              <div style={{ fontSize: '0.72rem', color: '#00F5A0', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {email || 'connecting...'}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#FFF', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {name.trim() || 'Your Name'}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: isValidEmail ? '#00F5A0' : '#94A3B8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {email.trim() || 'Enter your Google email'}
+                </div>
               </div>
+              {isValidEmail && <CheckCircle size={16} color="#00F5A0" />}
             </div>
-            <CheckCircle size={16} color="#00F5A0" />
-          </div>
+          )}
 
           {/* Connect Button */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || !name.trim() || !email.trim()}
             className="btn-teal-glow"
             style={{
               width: '100%',
@@ -240,15 +290,17 @@ export const GoogleConnectModal = () => {
               borderRadius: '14px',
               fontSize: '0.95rem',
               fontWeight: 700,
-              marginTop: '0.5rem',
+              marginTop: '0.4rem',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px'
+              gap: '8px',
+              opacity: (loading || !name.trim() || !email.trim()) ? 0.6 : 1,
+              cursor: (loading || !name.trim() || !email.trim()) ? 'not-allowed' : 'pointer'
             }}
           >
             <Sparkles size={16} />
-            <span>{loading ? 'Connecting...' : 'Connect & Continue'}</span>
+            <span>{loading ? 'Connecting Account...' : 'Continue as Candidate'}</span>
           </button>
         </form>
       </div>

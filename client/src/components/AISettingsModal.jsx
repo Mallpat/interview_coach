@@ -33,7 +33,9 @@ export const AISettingsModal = ({ isOpen, onClose }) => {
     setPersona(storedPersona);
     setCustomInstructions(storedInstructions);
     if (storedKey) {
-      setValidationResult({ valid: true, message: 'Saved and Active' });
+      setValidationResult({ valid: true, message: 'Custom Key Saved and Active' });
+    } else {
+      setValidationResult({ valid: true, message: 'Default Gemini 3.6 Flash Active' });
     }
   }, [isOpen]);
 

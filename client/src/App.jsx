@@ -3,7 +3,6 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { MobileTopBar } from './layouts/MobileTopBar';
 import { MobileBottomNav } from './layouts/MobileBottomNav';
-import { ScreenNavigator } from './components/ScreenNavigator';
 
 import { GetStartedPage } from './pages/auth/GetStartedPage';
 import { SignupPage } from './pages/auth/SignupPage';
@@ -221,9 +220,6 @@ const MobileAppShell = () => {
           }} />
         )}
       </div>
-
-      {/* Floating 21 Screens Quick Navigator */}
-      <ScreenNavigator />
 
       {/* Global Google Account Connection Modal */}
       <GoogleConnectModal />

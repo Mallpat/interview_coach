@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Mic, Send, Sparkles, Bot, Trash2, Key } from 'lucide-react';
+import { Mic, Send, Sparkles, Bot, Trash2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { AISettingsModal } from '../../components/AISettingsModal';
 
@@ -119,27 +119,6 @@ export const CareerMentor = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <button
-            onClick={() => setIsAISettingsOpen(true)}
-            style={{
-              background: 'rgba(0, 245, 160, 0.08)',
-              border: '1px solid rgba(0, 245, 160, 0.25)',
-              borderRadius: '8px',
-              padding: '0.35rem 0.6rem',
-              color: '#00F5A0',
-              fontSize: '0.7rem',
-              fontWeight: 700,
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              cursor: 'pointer'
-            }}
-            title="Configure Gemini API Key & Persona"
-          >
-            <Key size={12} />
-            <span>API Key</span>
-          </button>
-
           <button
             onClick={clearChat}
             style={{

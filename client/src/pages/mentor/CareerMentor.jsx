@@ -7,7 +7,7 @@ export const CareerMentor = () => {
   const [messages, setMessages] = useState([
     {
       sender: 'ai',
-      text: "👋 Hi there! I'm your AI Career Coach & Tech Mentor powered by Google Gemini. Ask me about system design trade-offs, behavioral STAR stories, resume optimization, or salary negotiation!"
+      text: "👋 Hi there! I'm your AI Career Coach & Tech Mentor. Ask me about system design trade-offs, behavioral STAR stories, resume optimization, or salary negotiation!"
     }
   ]);
   const [input, setInput] = useState('');
@@ -52,7 +52,7 @@ export const CareerMentor = () => {
         ...prev,
         {
           sender: 'ai',
-          text: `⚠️ ${err.message || 'Could not reach mentor server.'} (Make sure your Gemini API key is configured or backend is running.)`
+          text: `⚠️ ${err.message || 'Could not reach mentor server.'} (Please check your internet connection or try again in a moment.)`
         }
       ]);
     } finally {
@@ -209,7 +209,7 @@ export const CareerMentor = () => {
               gap: '8px'
             }}>
               <Sparkles size={14} className="animate-spin" />
-              <span>Gemini is formulating expert guidance...</span>
+              <span>Your coach is formulating expert guidance...</span>
             </div>
           </div>
         )}
@@ -272,7 +272,7 @@ export const CareerMentor = () => {
         }}>
           <input
             type="text"
-            placeholder="Ask your Gemini career mentor anything..."
+            placeholder="Ask your coach anything..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && handleSend()}

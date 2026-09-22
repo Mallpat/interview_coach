@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Edit2, Plus, FileText, Check, ArrowRight } from 'lucide-react';
+import { Edit2, Plus, FileText, Check, ArrowRight, Upload, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 export const ProfileSetupPage = () => {
@@ -23,49 +23,33 @@ export const ProfileSetupPage = () => {
       if (fromStorage && typeof fromStorage === 'string' && fromStorage.trim() && !isExcluded(fromStorage)) {
         return fromStorage.trim();
       }
-      // 3. AuthContext state
+      // 3. Candidate name from AuthContext
       if (candidateName && typeof candidateName === 'string' && candidateName.trim() && !isExcluded(candidateName)) {
         return candidateName.trim();
       }
-      // 4. Authenticated user profile
-      const fromUser = user?.name;
-      if (fromUser && typeof fromUser === 'string' && fromUser.trim() && !isExcluded(fromUser)) {
-        return fromUser.trim();
+      // 4. Authenticated user object name
+      const userName = user?.name || user?.displayName;
+      if (userName && typeof userName === 'string' && userName.trim() && !isExcluded(userName)) {
+        return userName.trim();
       }
-      const fromProfile = profile?.fullName;
-      if (fromProfile && typeof fromProfile === 'string' && fromProfile.trim() && !isExcluded(fromProfile)) {
-        return fromProfile.trim();
-      }
-    } catch (e) {}
-    return '';
+      return '';
+    } catch (e) {
+      return '';
+    }
   };
 
   const [fullName, setFullName] = useState(getActiveCandidateName);
-  const [targetRole, setTargetRole] = useState(profile?.targetRole || 'Frontend');
-  const [skills, setSkills] = useState(profile?.skills || ['React', 'Node.js']);
+  const [targetRole, setTargetRole] = useState(profile?.targetRole || 'Full Stack Engineer');
+  const [skills, setSkills] = useState(profile?.skills || ['React', 'Node.js', 'System Design']);
   const [newSkill, setNewSkill] = useState('');
   const [isAddingSkill, setIsAddingSkill] = useState(false);
 
-  // Sync state only on initial mount or when location.state explicitly passes a name
+  // Sync state if candidate name arrives or updates in real time
   useEffect(() => {
-    const fromPreviousPage = location.state?.fullName;
-    if (fromPreviousPage && typeof fromPreviousPage === 'string' && fromPreviousPage.trim()) {
-      const validName = fromPreviousPage.trim();
-      setFullName(prev => prev || validName);
-    } else {
-      const currentName = getActiveCandidateName();
-      if (currentName) {
-        setFullName(prev => prev || currentName);
-      }
-    }
-  }, [location.state?.fullName]);
-
-  // Real-time synchronization across screens
-  useEffect(() => {
-    const handleUpdate = (e) => {
-      const newName = e?.detail || localStorage.getItem('candidate_name');
-      if (newName && fullName !== newName) {
-        setFullName(newName);
+    const handleUpdate = () => {
+      const current = getActiveCandidateName();
+      if (current && current !== fullName) {
+        setFullName(current);
       }
     };
     window.addEventListener('candidate_name_updated', handleUpdate);
@@ -83,7 +67,35 @@ export const ProfileSetupPage = () => {
     user?.name?.trim()?.charAt(0) || 
     'U'
   ).toUpperCase();
-  const resumeDisplayName = location.state?.resumeName || user?.resumeName || 'resume_final.pdf';
+
+  const [resumeDisplayName, setResumeDisplayName] = useState(() => {
+    const fromLoc = location.state?.resumeName;
+    if (fromLoc && !/resume_final/i.test(fromLoc)) return fromLoc;
+    const fromUser = user?.resumeName;
+    if (fromUser && !/resume_final/i.test(fromUser)) return fromUser;
+    const fromStorage = localStorage.getItem('candidate_resume');
+    if (fromStorage && !/resume_final/i.test(fromStorage)) return fromStorage;
+    return null;
+  });
+
+  const handleResumeUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setResumeDisplayName(file.name);
+      try {
+        localStorage.setItem('candidate_resume', file.name);
+      } catch (err) {}
+    }
+  };
+
+  const handleRemoveResume = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setResumeDisplayName(null);
+    try {
+      localStorage.removeItem('candidate_resume');
+    } catch (err) {}
+  };
 
   const handleAddSkill = (e) => {
     e.preventDefault();
@@ -326,24 +338,68 @@ export const ProfileSetupPage = () => {
           </div>
         </div>
 
-        {/* Uploaded File Pill */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '8px',
-          padding: '0.75rem 1rem',
-          borderRadius: '12px',
-          background: 'rgba(0, 245, 160, 0.06)',
-          border: '1px solid rgba(0, 245, 160, 0.25)',
-          fontSize: '0.8rem',
-          color: '#E2E8F0'
-        }}>
-          <FileText size={16} color="#00F5A0" />
-          <span style={{ fontWeight: 600 }}>{resumeDisplayName}</span>
-          <span style={{ color: '#00F5A0', marginLeft: 'auto', fontSize: '0.72rem', fontWeight: 600 }}>
-            uploaded
-          </span>
-        </div>
+        {/* Uploaded Resume or File Picker */}
+        {resumeDisplayName ? (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '0.75rem 1rem',
+            borderRadius: '12px',
+            background: 'rgba(0, 245, 160, 0.06)',
+            border: '1px solid rgba(0, 245, 160, 0.25)',
+            fontSize: '0.8rem',
+            color: '#E2E8F0'
+          }}>
+            <FileText size={16} color="#00F5A0" style={{ flexShrink: 0 }} />
+            <span style={{ fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1 }}>
+              {resumeDisplayName}
+            </span>
+            <span style={{ color: '#00F5A0', fontSize: '0.72rem', fontWeight: 600, flexShrink: 0 }}>
+              uploaded
+            </span>
+            <button
+              type="button"
+              onClick={handleRemoveResume}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: '#94A3B8',
+                cursor: 'pointer',
+                padding: '2px',
+                display: 'flex',
+                alignItems: 'center',
+                flexShrink: 0
+              }}
+              title="Remove resume"
+            >
+              <X size={15} />
+            </button>
+          </div>
+        ) : (
+          <label style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            padding: '0.75rem 1rem',
+            borderRadius: '12px',
+            background: 'rgba(255, 255, 255, 0.03)',
+            border: '1.5px dashed rgba(255, 255, 255, 0.18)',
+            fontSize: '0.8rem',
+            color: '#94A3B8',
+            cursor: 'pointer',
+            transition: 'border-color 0.2s'
+          }}>
+            <input
+              type="file"
+              accept=".pdf,.doc,.docx,.txt"
+              onChange={handleResumeUpload}
+              style={{ display: 'none' }}
+            />
+            <Upload size={16} color="#00F5A0" style={{ flexShrink: 0 }} />
+            <span>Attach resume (optional .pdf, .docx)</span>
+          </label>
+        )}
 
         {/* Continue Button */}
         <button

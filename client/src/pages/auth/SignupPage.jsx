@@ -60,6 +60,11 @@ export const SignupPage = () => {
     try {
       localStorage.setItem('candidate_name', candidateNameEntered);
       if (formData.email) localStorage.setItem('candidate_email', formData.email.trim());
+      if (resumeFile?.name) {
+        localStorage.setItem('candidate_resume', resumeFile.name);
+      } else {
+        localStorage.removeItem('candidate_resume');
+      }
       window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: candidateNameEntered }));
     } catch (err) {}
 
@@ -82,7 +87,7 @@ export const SignupPage = () => {
         state: { 
           fullName: candidateNameEntered, 
           email: formData.email.trim(),
-          resumeName: resumeFile?.name || 'resume_final.pdf'
+          resumeName: resumeFile?.name || null
         }
       });
     }
@@ -97,8 +102,11 @@ export const SignupPage = () => {
         if (loggedUser) {
           const googleName = loggedUser.name || '';
           if (googleName && setCandidateName) setCandidateName(googleName);
+          try {
+            localStorage.removeItem('candidate_resume');
+          } catch (e) {}
           navigate('/profile-setup', {
-            state: { fullName: googleName || localStorage.getItem('candidate_name') || '' }
+            state: { fullName: googleName || localStorage.getItem('candidate_name') || '', resumeName: null }
           });
         }
       }

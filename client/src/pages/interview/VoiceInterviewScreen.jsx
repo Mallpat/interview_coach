@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   X, 
@@ -12,17 +12,70 @@ import {
   Eye, 
   Sparkles, 
   Activity,
-  Volume2
+  Volume2,
+  ChevronRight
 } from 'lucide-react';
+
+const QUESTIONS_BY_ROLE = {
+  Frontend: [
+    "Walk me through how you optimize web application performance, reduce re-renders, and manage state in modern React applications.",
+    "How do you approach cross-browser compatibility, responsive CSS layouts, and web accessibility (a11y) standards?",
+    "Describe a challenging frontend bug or race condition you diagnosed, and what debugging tools you used.",
+    "How do you architect reusable UI components and manage client-side caching or API state synchronization?"
+  ],
+  Backend: [
+    "Explain how you architect scalable RESTful microservices and handle high-throughput database queries.",
+    "Tell me about a time you optimized a slow database query or resolved connection pool exhaustion under load.",
+    "How do you handle distributed transactions, data consistency, and failure recovery across services?",
+    "Describe your strategy for rate limiting, JWT/OAuth authentication, and securing API endpoints."
+  ],
+  Data: [
+    "Walk me through how you design automated ETL pipelines and handle data validation and schema drift.",
+    "How do you optimize analytical queries on partitioned and clustered data warehouses like BigQuery or Snowflake?",
+    "Describe an end-to-end data or machine learning feature you delivered, and how you ensured data quality.",
+    "How do you balance batch processing vs real-time streaming architectures for large event streams?"
+  ],
+  DevOps: [
+    "Walk me through your CI/CD deployment pipeline with Docker, Kubernetes, and automated canary rollbacks.",
+    "How do you monitor infrastructure health, trace microservice latencies, and alert on SLIs/SLOs?",
+    "Describe a high-severity production outage you mitigated, including the root cause and remediation.",
+    "How do you enforce security best practices, secret management, and Infrastructure as Code (Terraform)?"
+  ],
+  General: [
+    "Tell me about a challenging engineering project you led from concept to production.",
+    "Describe a technical disagreement you had with a teammate or stakeholder, and how you resolved it.",
+    "How do you prioritize technical debt against product feature deadlines?",
+    "Tell me about a time you had to learn an unfamiliar technology stack very quickly to deliver a feature."
+  ]
+};
 
 export const VoiceInterviewScreen = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const role = location.state?.role || 'Frontend';
+  const role = location.state?.role || localStorage.getItem('candidate_role') || 'Frontend';
   const difficulty = location.state?.difficulty || 'Medium';
+  const rawResume = location.state?.resumeName || localStorage.getItem('candidate_resume') || '';
+  const candidateResume = (/resume_final/i.test(rawResume)) ? '' : rawResume;
 
-  const [seconds, setSeconds] = useState(134); // starts at 02:14
+  // Build questions tailored to selected role & uploaded resume
+  const questionsList = useMemo(() => {
+    const roleKey = Object.keys(QUESTIONS_BY_ROLE).find(k => k.toLowerCase() === role.toLowerCase()) || 'Frontend';
+    const base = QUESTIONS_BY_ROLE[roleKey] || QUESTIONS_BY_ROLE.Frontend;
+    if (candidateResume) {
+      return [
+        `Based on your resume (${candidateResume}), walk me through your most impactful technical achievement and the challenges you solved.`,
+        ...base
+      ];
+    }
+    return base;
+  }, [role, candidateResume]);
+
+  const [questionIndex, setQuestionIndex] = useState(0);
+  const [isSpeakingQuestion, setIsSpeakingQuestion] = useState(false);
+  const currentQuestion = questionsList[questionIndex % questionsList.length];
+
+  const [seconds, setSeconds] = useState(0); // Starts cleanly at 00:00
   const [isRecording, setIsRecording] = useState(true);
   const [useWebcam, setUseWebcam] = useState(true); // Default to live webcam for camera screen
   const [showCaptions, setShowCaptions] = useState(true);
@@ -34,10 +87,8 @@ export const VoiceInterviewScreen = () => {
   const [eyeContactScore, setEyeContactScore] = useState(88);
   const [confidenceTier, setConfidenceTier] = useState('High Confidence');
 
-  // Live Speech to Text (words spoken visible on screen)
-  const [liveTranscript, setLiveTranscript] = useState(
-    'I designed and optimized the component state architecture to reduce load times by 40%...'
-  );
+  // Live Speech to Text (starts empty, transcribed as user speaks)
+  const [liveTranscript, setLiveTranscript] = useState('');
   const [interimText, setInterimText] = useState('');
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [audioLevel, setAudioLevel] = useState(45);
@@ -47,6 +98,31 @@ export const VoiceInterviewScreen = () => {
   const audioContextRef = useRef(null);
   const recognitionRef = useRef(null);
   const streamRef = useRef(null);
+
+  // Voice read aloud for question
+  const speakCurrentQuestion = () => {
+    if (!('speechSynthesis' in window)) return;
+    window.speechSynthesis.cancel();
+    if (isSpeakingQuestion) {
+      setIsSpeakingQuestion(false);
+      return;
+    }
+    const utterance = new SpeechSynthesisUtterance(currentQuestion);
+    utterance.rate = 0.96;
+    utterance.pitch = 1.0;
+    utterance.onend = () => setIsSpeakingQuestion(false);
+    utterance.onerror = () => setIsSpeakingQuestion(false);
+    setIsSpeakingQuestion(true);
+    window.speechSynthesis.speak(utterance);
+  };
+
+  const handleNextQuestion = () => {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    setIsSpeakingQuestion(false);
+    setQuestionIndex(prev => (prev + 1) % questionsList.length);
+    setLiveTranscript('');
+    setInterimText('');
+  };
 
   // Format timer MM:SS
   const formatTime = (totalSec) => {
@@ -367,24 +443,119 @@ export const VoiceInterviewScreen = () => {
         </span>
       </div>
 
-      {/* Question Speech Card */}
+      {/* Dynamic Question Speech Card with Role & Resume Context */}
       <div style={{
         background: '#0D1322',
-        border: '1px solid rgba(255, 255, 255, 0.08)',
+        border: '1px solid rgba(0, 245, 160, 0.22)',
         borderRadius: '16px',
-        padding: '0.75rem 1rem',
-        textAlign: 'center',
-        boxShadow: '0 4px 15px rgba(0, 0, 0, 0.3)',
-        marginBottom: '0.75rem'
+        padding: '0.8rem 1rem',
+        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.35)',
+        marginBottom: '0.75rem',
+        textAlign: 'left'
       }}>
+        {/* Top Meta Bar */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: '0.45rem',
+          fontSize: '0.72rem'
+        }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{
+              background: 'rgba(0, 245, 160, 0.15)',
+              color: '#00F5A0',
+              fontWeight: 800,
+              padding: '0.15rem 0.5rem',
+              borderRadius: '6px',
+              letterSpacing: '0.03em'
+            }}>
+              Q{questionIndex + 1} of {questionsList.length}
+            </span>
+            <span style={{ color: '#94A3B8', fontWeight: 600 }}>
+              {role} • {difficulty}
+            </span>
+          </div>
+
+          {candidateResume ? (
+            <span style={{
+              color: '#00F5A0',
+              fontWeight: 600,
+              fontSize: '0.68rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '3px'
+            }}>
+              📄 Resume-aligned
+            </span>
+          ) : (
+            <span style={{ color: '#64748B', fontSize: '0.68rem' }}>
+              🎯 Role-calibrated
+            </span>
+          )}
+        </div>
+
+        {/* Question Text */}
         <p style={{
-          fontSize: '0.9rem',
+          fontSize: '0.88rem',
           fontWeight: 600,
           color: '#FFFFFF',
-          lineHeight: 1.35
+          lineHeight: 1.4,
+          margin: '0 0 0.55rem 0'
         }}>
-          "Tell me about a challenging project."
+          "{currentQuestion}"
         </p>
+
+        {/* Action Controls: Read Aloud & Next Question */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          paddingTop: '0.45rem',
+          borderTop: '1px solid rgba(255, 255, 255, 0.06)'
+        }}>
+          <button
+            type="button"
+            onClick={speakCurrentQuestion}
+            style={{
+              background: isSpeakingQuestion ? 'rgba(0, 245, 160, 0.2)' : 'rgba(255, 255, 255, 0.06)',
+              border: `1px solid ${isSpeakingQuestion ? '#00F5A0' : 'rgba(255, 255, 255, 0.12)'}`,
+              borderRadius: '8px',
+              padding: '0.25rem 0.6rem',
+              color: isSpeakingQuestion ? '#00F5A0' : '#CBD5E1',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '5px',
+              cursor: 'pointer'
+            }}
+          >
+            <Volume2 size={13} />
+            <span>{isSpeakingQuestion ? 'Speaking...' : 'Listen'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleNextQuestion}
+            style={{
+              background: 'rgba(0, 245, 160, 0.1)',
+              border: '1px solid rgba(0, 245, 160, 0.3)',
+              borderRadius: '8px',
+              padding: '0.25rem 0.65rem',
+              color: '#00F5A0',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            <span>Next Question</span>
+            <ChevronRight size={13} />
+          </button>
+        </div>
       </div>
 
       {/* Center Video Container with Subtitle / Words Spoken Overlay */}
@@ -546,7 +717,23 @@ export const VoiceInterviewScreen = () => {
               overflow: 'hidden',
               textOverflow: 'ellipsis'
             }}>
-              "{liveTranscript} <span style={{ color: '#00F5A0', fontStyle: 'italic' }}>{interimText}</span>"
+              {(liveTranscript || interimText) ? (
+                <>
+                  "{liveTranscript} <span style={{ color: '#00F5A0', fontStyle: 'italic' }}>{interimText}</span>"
+                </>
+              ) : (
+                <span style={{ color: '#94A3B8', fontStyle: 'italic', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{
+                    display: 'inline-block',
+                    width: '6px',
+                    height: '6px',
+                    borderRadius: '50%',
+                    background: '#00F5A0',
+                    boxShadow: '0 0 6px #00F5A0'
+                  }} />
+                  Listening for your answer... Speak clearly into your microphone.
+                </span>
+              )}
             </p>
           </div>
         )}

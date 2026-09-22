@@ -33,7 +33,8 @@ export const Profile = () => {
 
   const rawEmail = user?.email || localStorage.getItem('candidate_email') || '';
   const candidateEmail = (/mallpat/i.test(rawEmail) || /demo/i.test(rawEmail)) ? '' : rawEmail;
-  const resumeName = user?.resumeName || localStorage.getItem('candidate_resume') || 'resume_final.pdf';
+  const rawResume = user?.resumeName || localStorage.getItem('candidate_resume') || '';
+  const resumeName = (/resume_final/i.test(rawResume)) ? '' : rawResume;
 
   return (
     <div style={{
@@ -153,9 +154,28 @@ export const Profile = () => {
             <span style={{ color: '#94A3B8' }}>Target Role</span>
             <span style={{ color: '#00F5A0', fontWeight: 600 }}>{role}</span>
           </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.35rem 0', alignItems: 'center' }}>
             <span style={{ color: '#94A3B8' }}>Resume</span>
-            <span style={{ color: '#CBD5E1', fontWeight: 500 }}>{resumeName}</span>
+            {resumeName ? (
+              <span style={{ color: '#00F5A0', fontWeight: 600 }}>{resumeName}</span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => navigate('/profile-setup')}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94A3B8',
+                  fontStyle: 'italic',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer',
+                  textDecoration: 'underline',
+                  padding: 0
+                }}
+              >
+                No resume uploaded (attach)
+              </button>
+            )}
           </div>
         </div>
       </div>

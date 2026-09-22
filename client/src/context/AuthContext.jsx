@@ -24,14 +24,14 @@ const AuthContext = createContext(null);
 
 export const isInvalidOrAnanya = (name) => {
   if (!name || typeof name !== 'string') return false;
-  return /ananya/i.test(name.trim());
+  return /ananya/i.test(name.trim()) || /mallhar/i.test(name.trim()) || /mallpat/i.test(name.trim());
 };
 
 export const getSavedCandidateName = () => {
   try {
     const saved = localStorage.getItem('candidate_name');
     if (saved && saved.trim()) {
-      if (/ananya/i.test(saved)) {
+      if (/ananya/i.test(saved) || /mallhar/i.test(saved) || /mallpat/i.test(saved)) {
         localStorage.removeItem('candidate_name');
         return '';
       }
@@ -75,12 +75,12 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     try {
       const stored = localStorage.getItem('candidate_name');
-      if (stored && /ananya/i.test(stored)) {
+      if (stored && (/ananya/i.test(stored) || /mallhar/i.test(stored) || /mallpat/i.test(stored))) {
         localStorage.removeItem('candidate_name');
         setCandidateNameState('');
       }
       const storedEmail = localStorage.getItem('candidate_email');
-      if (storedEmail && /mallpat2008@gmail\.com/i.test(storedEmail)) {
+      if (storedEmail && (/mallpat2008@gmail\.com/i.test(storedEmail) || /mallpat/i.test(storedEmail))) {
         // Automatically purge any hardcoded test email stored on visitors' devices
         localStorage.removeItem('candidate_email');
       }

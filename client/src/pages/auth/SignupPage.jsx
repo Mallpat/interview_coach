@@ -5,20 +5,13 @@ import { useAuth, getSavedCandidateName } from '../../context/AuthContext';
 
 export const SignupPage = () => {
   const navigate = useNavigate();
-  const { register, loginWithGoogle, candidateName, setCandidateName } = useAuth();
+  const { register, loginWithGoogle, setCandidateName } = useAuth();
   
-  const initialName = candidateName || getSavedCandidateName() || '';
   const [formData, setFormData] = useState({
-    fullName: initialName,
+    fullName: '',
     email: '',
     password: ''
   });
-
-  useEffect(() => {
-    if (candidateName && formData.fullName !== candidateName) {
-      setFormData(prev => ({ ...prev, fullName: candidateName }));
-    }
-  }, [candidateName]);
   const [resumeFile, setResumeFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);

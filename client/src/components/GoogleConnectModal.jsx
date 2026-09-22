@@ -7,14 +7,8 @@ export const GoogleConnectModal = () => {
   const { isGoogleModalOpen, closeGoogleModal, connectGoogleAccount, candidateName } = useAuth();
   const navigate = useNavigate();
 
-  // Clear any legacy hardcoded email or name from localStorage so other users aren't prefilled
-  const rawSavedEmail = localStorage.getItem('candidate_email') || '';
-  const cleanSavedEmail = /mallpat/i.test(rawSavedEmail) ? '' : rawSavedEmail;
-  const rawSavedName = candidateName || localStorage.getItem('candidate_name') || '';
-  const cleanSavedName = /mallhar/i.test(rawSavedName) ? '' : rawSavedName;
-
-  const [name, setName] = useState(cleanSavedName);
-  const [email, setEmail] = useState(cleanSavedEmail);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 

@@ -10,16 +10,17 @@ export const Profile = () => {
   const [isAISettingsOpen, setIsAISettingsOpen] = useState(false);
 
   const getCandidateFullName = () => {
-    if (authCandidateName) return authCandidateName;
+    const isExcluded = (n) => !n || /ananya/i.test(n) || /mallhar/i.test(n) || /mallpat/i.test(n);
+    if (authCandidateName && !isExcluded(authCandidateName)) return authCandidateName;
     const stored = localStorage.getItem('candidate_name');
-    if (stored) return stored;
-    if (user?.name) return user.name;
-    if (profile?.fullName) return profile.fullName;
+    if (stored && !isExcluded(stored)) return stored;
+    if (user?.name && !isExcluded(user.name)) return user.name;
+    if (profile?.fullName && !isExcluded(profile.fullName)) return profile.fullName;
     return 'Candidate';
   };
 
   const candidateName = getCandidateFullName();
-  const avatarInitial = (candidateName.charAt(0) || 'U').toUpperCase();
+  const avatarInitial = (candidateName.charAt(0) || 'C').toUpperCase();
   const role = profile?.targetRole || 'Full Stack Engineer';
 
   const menuItems = [
@@ -30,7 +31,8 @@ export const Profile = () => {
     { label: 'Notifications & Reminders', path: '/notifications', icon: Bell, badge: '2 New' }
   ];
 
-  const candidateEmail = user?.email || localStorage.getItem('candidate_email') || '';
+  const rawEmail = user?.email || localStorage.getItem('candidate_email') || '';
+  const candidateEmail = (/mallpat/i.test(rawEmail) || /demo/i.test(rawEmail)) ? '' : rawEmail;
   const resumeName = user?.resumeName || localStorage.getItem('candidate_resume') || 'resume_final.pdf';
 
   return (

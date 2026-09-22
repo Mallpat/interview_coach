@@ -11,27 +11,29 @@ export const ProfileSetupPage = () => {
   // Pick up name passed from SignupPage, localStorage, AuthContext, or location state
   const getActiveCandidateName = () => {
     try {
+      const isExcluded = (n) => !n || /ananya/i.test(n) || /mallhar/i.test(n) || /mallpat/i.test(n);
+
       // 1. Direct state passed from the previous page (SignupPage)
       const fromState = location.state?.fullName;
-      if (fromState && typeof fromState === 'string' && fromState.trim()) {
+      if (fromState && typeof fromState === 'string' && fromState.trim() && !isExcluded(fromState)) {
         return fromState.trim();
       }
       // 2. Candidate name saved in localStorage
       const fromStorage = localStorage.getItem('candidate_name');
-      if (fromStorage && typeof fromStorage === 'string' && fromStorage.trim()) {
+      if (fromStorage && typeof fromStorage === 'string' && fromStorage.trim() && !isExcluded(fromStorage)) {
         return fromStorage.trim();
       }
       // 3. AuthContext state
-      if (candidateName && typeof candidateName === 'string' && candidateName.trim()) {
+      if (candidateName && typeof candidateName === 'string' && candidateName.trim() && !isExcluded(candidateName)) {
         return candidateName.trim();
       }
       // 4. Authenticated user profile
       const fromUser = user?.name;
-      if (fromUser && typeof fromUser === 'string' && fromUser.trim()) {
+      if (fromUser && typeof fromUser === 'string' && fromUser.trim() && !isExcluded(fromUser)) {
         return fromUser.trim();
       }
       const fromProfile = profile?.fullName;
-      if (fromProfile && typeof fromProfile === 'string' && fromProfile.trim()) {
+      if (fromProfile && typeof fromProfile === 'string' && fromProfile.trim() && !isExcluded(fromProfile)) {
         return fromProfile.trim();
       }
     } catch (e) {}

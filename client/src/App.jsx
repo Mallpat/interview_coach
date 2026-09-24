@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { MobileTopBar } from './layouts/MobileTopBar';
@@ -48,9 +48,13 @@ import { AdminPanel } from './pages/admin/AdminPanel';
 import { Profile } from './pages/profile/Profile';
 
 const MobileAppShell = () => {
-  const [isSimulator, setIsSimulator] = useState(true);
+  // On a real Android device (Capacitor native), disable the simulator frame.
+  // In a browser, show it by default so devs can preview the mobile layout.
+  const isNative = typeof window !== 'undefined' &&
+    window.Capacitor?.isNativePlatform?.();
+  const [isSimulator, setIsSimulator] = useState(!isNative);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const envKey = import.meta.env.VITE_GEMINI_API_KEY;
     if (envKey && !localStorage.getItem('gemini_api_key')) {
       localStorage.setItem('gemini_api_key', envKey.trim());
@@ -112,7 +116,7 @@ const MobileAppShell = () => {
         )}
 
         {/* Mobile Top App Bar */}
-        <MobileTopBar isSimulator={isSimulator} setIsSimulator={setIsSimulator} />
+        <MobileTopBar />
 
         {/* Scrollable Screen Content */}
         <div style={{

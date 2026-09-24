@@ -3,6 +3,149 @@ import { Mic, Send, Sparkles, Bot, Trash2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { AISettingsModal } from '../../components/AISettingsModal';
 
+// ---------------------------------------------------------------------------
+// Lightweight inline Markdown renderer — no external deps needed
+// Handles: # headings, **bold**, `code`, bullet lists, numbered lists,
+//          horizontal rules, and code fences.
+// ---------------------------------------------------------------------------
+const MarkdownRenderer = ({ text }) => {
+  if (!text) return null;
+
+  const lines = text.split('\n');
+  const elements = [];
+  let i = 0;
+
+  const parseInline = (str) => {
+    // Bold **text** and `code`
+    const parts = str.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
+    return parts.map((part, idx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return <strong key={idx} style={{ color: '#00F5A0', fontWeight: 700 }}>{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return (
+          <code key={idx} style={{
+            background: 'rgba(0,245,160,0.12)',
+            color: '#00F5A0',
+            borderRadius: '4px',
+            padding: '0 4px',
+            fontFamily: 'monospace',
+            fontSize: '0.82em'
+          }}>{part.slice(1, -1)}</code>
+        );
+      }
+      return part;
+    });
+  };
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Code fence block
+    if (line.trim().startsWith('```')) {
+      const codeLines = [];
+      i++;
+      while (i < lines.length && !lines[i].trim().startsWith('```')) {
+        codeLines.push(lines[i]);
+        i++;
+      }
+      elements.push(
+        <pre key={i} style={{
+          background: 'rgba(0,0,0,0.35)',
+          border: '1px solid rgba(0,245,160,0.2)',
+          borderRadius: '8px',
+          padding: '0.65rem 0.85rem',
+          overflowX: 'auto',
+          fontSize: '0.78rem',
+          color: '#A3E4D7',
+          fontFamily: 'monospace',
+          margin: '0.5rem 0',
+          whiteSpace: 'pre'
+        }}>{codeLines.join('\n')}</pre>
+      );
+      i++;
+      continue;
+    }
+
+    // Headings
+    const h3 = line.match(/^###\s+(.*)/);
+    const h2 = line.match(/^##\s+(.*)/);
+    const h1 = line.match(/^#\s+(.*)/);
+    if (h1) {
+      elements.push(<p key={i} style={{ fontWeight: 800, fontSize: '1rem', color: '#fff', margin: '0.6rem 0 0.2rem' }}>{parseInline(h1[1])}</p>);
+      i++; continue;
+    }
+    if (h2) {
+      elements.push(<p key={i} style={{ fontWeight: 700, fontSize: '0.92rem', color: '#E2E8F0', margin: '0.5rem 0 0.15rem' }}>{parseInline(h2[1])}</p>);
+      i++; continue;
+    }
+    if (h3) {
+      elements.push(<p key={i} style={{ fontWeight: 600, fontSize: '0.87rem', color: '#CBD5E1', margin: '0.4rem 0 0.1rem' }}>{parseInline(h3[1])}</p>);
+      i++; continue;
+    }
+
+    // Horizontal rule
+    if (/^---+$/.test(line.trim())) {
+      elements.push(<hr key={i} style={{ border: 'none', borderTop: '1px solid rgba(255,255,255,0.1)', margin: '0.5rem 0' }} />);
+      i++; continue;
+    }
+
+    // Bullet list
+    if (/^[\*\-]\s/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^[\*\-]\s/.test(lines[i])) {
+        items.push(lines[i].replace(/^[\*\-]\s/, ''));
+        i++;
+      }
+      elements.push(
+        <ul key={i} style={{ paddingLeft: '1.1rem', margin: '0.3rem 0', listStyle: 'none' }}>
+          {items.map((item, idx) => (
+            <li key={idx} style={{ display: 'flex', gap: '6px', marginBottom: '3px' }}>
+              <span style={{ color: '#00F5A0', flexShrink: 0, marginTop: '2px' }}>›</span>
+              <span>{parseInline(item)}</span>
+            </li>
+          ))}
+        </ul>
+      );
+      continue;
+    }
+
+    // Numbered list
+    if (/^\d+\.\s/.test(line)) {
+      const items = [];
+      while (i < lines.length && /^\d+\.\s/.test(lines[i])) {
+        items.push(lines[i].replace(/^\d+\.\s/, ''));
+        i++;
+      }
+      elements.push(
+        <ol key={i} style={{ paddingLeft: '1.3rem', margin: '0.3rem 0' }}>
+          {items.map((item, idx) => (
+            <li key={idx} style={{ marginBottom: '3px', color: '#E2E8F0' }}>
+              {parseInline(item)}
+            </li>
+          ))}
+        </ol>
+      );
+      continue;
+    }
+
+    // Empty line → spacer
+    if (line.trim() === '') {
+      elements.push(<div key={i} style={{ height: '4px' }} />);
+      i++; continue;
+    }
+
+    // Normal paragraph line
+    elements.push(
+      <p key={i} style={{ margin: 0, lineHeight: 1.6 }}>{parseInline(line)}</p>
+    );
+    i++;
+  }
+
+  return <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>{elements}</div>;
+};
+// ---------------------------------------------------------------------------
+
 export const CareerMentor = () => {
   const [messages, setMessages] = useState([
     {
@@ -169,7 +312,7 @@ export const CareerMentor = () => {
               boxShadow: m.sender === 'ai' ? '0 0 15px rgba(0, 245, 160, 0.1)' : 'none',
               whiteSpace: 'pre-line'
             }}>
-              {m.text}
+              {m.sender === 'ai' ? <MarkdownRenderer text={m.text} /> : m.text}
             </div>
           </div>
         ))}

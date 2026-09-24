@@ -77,12 +77,12 @@ export const SignupPage = () => {
           candidateNameEntered,
           resumeFile
         );
+      } else if (!formData.email || !formData.password) {
+        setError('Please enter your email and password.');
+        setLoading(false);
+        return;
       }
-    } catch (err) {
-      console.warn('Registration notice:', err);
-    } finally {
-      setLoading(false);
-      // Navigate directly from previous page (Signup) to this page (Profile Setup)
+      // Only navigate if Firebase registration succeeded
       navigate('/profile-setup', {
         state: { 
           fullName: candidateNameEntered, 
@@ -90,6 +90,11 @@ export const SignupPage = () => {
           resumeName: resumeFile?.name || null
         }
       });
+    } catch (err) {
+      console.error('Registration error:', err);
+      setError(getFirebaseErrorMessage(err));
+    } finally {
+      setLoading(false);
     }
   };
 

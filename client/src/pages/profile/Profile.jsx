@@ -10,7 +10,6 @@ import {
   LogOut, 
   Check, 
   ChevronRight, 
-  ShieldCheck,
   Upload,
   RefreshCw,
   Sparkles,
@@ -197,7 +196,6 @@ export const Profile = () => {
   };
 
   const menuItems = [
-    { label: 'Admin Panel Overview', path: '/admin', icon: ShieldCheck, badge: 'Web' },
     { label: 'Career Advisor & Roadmap', path: '/career-advisor', icon: Compass, badge: 'Roadmap' },
     { label: 'Target Company Database', path: '/companies', icon: Building2, badge: 'FAANG' },
     { label: 'Gamification & Badges', path: '/gamification', icon: Flame, badge: '7d Streak' },

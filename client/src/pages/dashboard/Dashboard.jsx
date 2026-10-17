@@ -1,14 +1,64 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Mic, Code, Sparkles, ArrowRight, TrendingUp, Code2, FileText } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { getActiveResumeAnalysis } from '../../services/resumeAnalysisService';
+import { 
+  getActiveResumeAnalysis, 
+  getStoredInterviewHistory, 
+  analyzeResumeForInterviews, 
+  saveResumeAnalysis 
+} from '../../services/resumeAnalysisService';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, candidateName: authCandidateName } = useAuth();
-
   const location = useLocation();
+
+  // Dynamic User Interview History State (Defaults to 0 for every new user!)
+  const [interviewHistory, setInterviewHistory] = useState(() => getStoredInterviewHistory());
+  
+  // Real-time resume analysis state
+  const [activeAnalysis, setActiveAnalysis] = useState(() => {
+    let current = getActiveResumeAnalysis();
+    if (!current) {
+      const storedText = localStorage.getItem('candidate_resume_text');
+      if (storedText && storedText.length > 20) {
+        const role = localStorage.getItem('candidate_role') || 'Full Stack Engineer';
+        const scanned = analyzeResumeForInterviews(storedText, localStorage.getItem('candidate_resume') || 'Resume.pdf', role);
+        saveResumeAnalysis(scanned);
+        current = scanned;
+      }
+    }
+    return current;
+  });
+
+  useEffect(() => {
+    const handleInterviewUpdate = (e) => {
+      if (e?.detail) setInterviewHistory(e.detail);
+      else setInterviewHistory(getStoredInterviewHistory());
+    };
+    const handleAnalysisUpdate = (e) => {
+      if (e?.detail) setActiveAnalysis(e.detail);
+      else setActiveAnalysis(getActiveResumeAnalysis());
+    };
+
+    window.addEventListener('interview_history_updated', handleInterviewUpdate);
+    window.addEventListener('resume_analysis_updated', handleAnalysisUpdate);
+    window.addEventListener('storage', handleInterviewUpdate);
+    return () => {
+      window.removeEventListener('interview_history_updated', handleInterviewUpdate);
+      window.removeEventListener('resume_analysis_updated', handleAnalysisUpdate);
+      window.removeEventListener('storage', handleInterviewUpdate);
+    };
+  }, []);
+
+  const interviewCount = interviewHistory.length;
+  const atsScore = activeAnalysis?.atsScore || (localStorage.getItem('candidate_ats_score') ? Number(localStorage.getItem('candidate_ats_score')) : null);
+  
+  // Calculate true confidence based on completed interviews, or 0% for new candidates
+  const confidenceScore = interviewCount > 0
+    ? Math.round(interviewHistory.reduce((sum, item) => sum + (Number(item.score) || 70), 0) / interviewCount)
+    : 0;
 
   const getCandidateFirstName = () => {
     try {
@@ -129,10 +179,10 @@ export const Dashboard = () => {
               <span style={{
                 fontSize: '2.1rem',
                 fontWeight: 800,
-                color: '#FFFFFF',
+                color: atsScore ? '#FFFFFF' : '#94A3B8',
                 letterSpacing: '-0.03em'
               }}>
-                78
+                {atsScore !== null ? atsScore : '--'}
               </span>
               <span style={{ fontSize: '1.1rem', color: '#94A3B8', fontWeight: 600 }}>
                 /100
@@ -144,13 +194,19 @@ export const Dashboard = () => {
             width: '42px',
             height: '42px',
             borderRadius: '50%',
-            background: 'rgba(0, 245, 160, 0.1)',
-            border: '2px solid #00F5A0',
+            background: atsScore ? 'rgba(0, 245, 160, 0.1)' : 'rgba(255, 255, 255, 0.05)',
+            border: `2px solid ${atsScore ? (atsScore >= 75 ? '#00F5A0' : '#00F2FE') : '#64748B'}`,
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center'
           }}>
-            <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#00F5A0' }}>78%</span>
+            <span style={{ 
+              fontSize: '0.8rem', 
+              fontWeight: 800, 
+              color: atsScore ? (atsScore >= 75 ? '#00F5A0' : '#00F2FE') : '#94A3B8' 
+            }}>
+              {atsScore !== null ? `${atsScore}%` : '0%'}
+            </span>
           </div>
         </div>
 
@@ -182,7 +238,7 @@ export const Dashboard = () => {
             e.currentTarget.style.borderColor = 'rgba(0, 245, 160, 0.35)';
           }}
         >
-          <span>Improve resume</span>
+          <span>{atsScore ? 'Improve & Re-scan resume' : 'Scan resume with AI'}</span>
           <ArrowRight size={15} color="#00F5A0" />
         </button>
       </div>
@@ -193,7 +249,7 @@ export const Dashboard = () => {
         gridTemplateColumns: '1fr 1fr',
         gap: '0.85rem'
       }}>
-        {/* Interviews Card */}
+        {/* Interviews Card - 0 for new candidates */}
         <div
           onClick={() => navigate('/history')}
           style={{
@@ -214,11 +270,11 @@ export const Dashboard = () => {
             color: '#FFFFFF',
             marginTop: '0.2rem'
           }}>
-            12
+            {interviewCount}
           </div>
         </div>
 
-        {/* Confidence Card */}
+        {/* Confidence Card - 0% for new candidates with 0 completed interviews */}
         <div
           onClick={() => navigate('/analytics')}
           style={{
@@ -236,10 +292,10 @@ export const Dashboard = () => {
           <div style={{
             fontSize: '1.75rem',
             fontWeight: 800,
-            color: '#00F5A0',
+            color: confidenceScore > 0 ? '#00F5A0' : '#94A3B8',
             marginTop: '0.2rem'
           }}>
-            82%
+            {confidenceScore > 0 ? `${confidenceScore}%` : '0%'}
           </div>
         </div>
       </div>

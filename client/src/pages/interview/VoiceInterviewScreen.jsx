@@ -16,7 +16,7 @@ import {
   ChevronRight,
   Code2
 } from 'lucide-react';
-import { getActiveResumeAnalysis } from '../../services/resumeAnalysisService';
+import { getActiveResumeAnalysis, recordInterviewSession } from '../../services/resumeAnalysisService';
 
 const QUESTIONS_BY_ROLE = {
   Frontend: [
@@ -480,12 +480,28 @@ export const VoiceInterviewScreen = () => {
   }, [useWebcam]);
 
   const handleFinish = () => {
+    const rawScore = Math.round((facialConfidence + eyeContactScore + smileScore) / 3);
+    const sessionScore = Math.max(50, Math.min(96, rawScore || 80));
+    const now = new Date();
+    const dateFormatted = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    const formattedDuration = formatTime(seconds);
+
+    recordInterviewSession({
+      role: `${role || 'Technical'} • ${difficulty || 'Medium'}`,
+      date: dateFormatted,
+      score: sessionScore,
+      duration: formattedDuration,
+      facialConfidence,
+      expression: faceExpression,
+      type: 'voice'
+    });
+
     navigate('/feedback-report', {
       state: {
         role,
         difficulty,
-        score: Math.round((facialConfidence + eyeContactScore + smileScore) / 3),
-        duration: formatTime(seconds),
+        score: sessionScore,
+        duration: formattedDuration,
         facialConfidence,
         expression: faceExpression
       }

@@ -343,6 +343,148 @@ export const getTailoredCodingChallenge = (branchId, skills = []) => {
 };
 
 /**
+ * Multi-factor AI ATS Scanner & Scorer Engine
+ * Evaluates keywords, quantified impact metrics, action verbs, section completeness, and word count.
+ */
+export const calculateATSScoreAndFindings = (resumeText = '', targetRole = 'Full Stack Engineer', extractedSkills = [], branch = null) => {
+  const normalized = resumeText.toLowerCase();
+  
+  // 1. Keyword Alignment & Stack Coverage (30 pts max)
+  const defaultSkills = getDefaultSkillsForRole(targetRole);
+  const matchedKeywords = extractedSkills.filter(s => normalized.includes(s.toLowerCase()));
+  const missingKeywords = defaultSkills.filter(ds => !extractedSkills.some(es => es.toLowerCase() === ds.toLowerCase()));
+  
+  const skillCoverageRatio = defaultSkills.length > 0 
+    ? Math.min(matchedKeywords.length / Math.max(defaultSkills.length * 0.65, 3), 1) 
+    : 0.8;
+  const keywordScore = Math.round(skillCoverageRatio * 30);
+
+  // 2. Quantifiable Impact & Metrics (25 pts max)
+  const metricRegex = /(\b(?:increased|reduced|improved|scaled|saved|cut|accelerated|achieved)\b[^,\.\n]*(?:\d+%\s*|\$\d+[kKmM]?|\d+x|\d+\s*(?:ms|seconds|users|requests|engineers|components|kg|bar|psi))[^,\.\n]*)/gi;
+  const foundMetrics = [];
+  let mMatch;
+  while ((mMatch = metricRegex.exec(resumeText)) !== null) {
+    if (mMatch[0].length < 120) foundMetrics.push(mMatch[0].trim());
+  }
+  const rawNumbers = (resumeText.match(/\b\d+(?:\.\d+)?(?:%|\s*k|\s*m|\s*tps|\s*ms|\s*users|\s*x)\b/gi) || []).length;
+  const totalMetricIndicators = foundMetrics.length + Math.min(rawNumbers, 4);
+
+  let metricScore = 8;
+  if (totalMetricIndicators >= 4) metricScore = 25;
+  else if (totalMetricIndicators >= 2) metricScore = 20;
+  else if (totalMetricIndicators >= 1) metricScore = 15;
+
+  // 3. Action Verbs & Active Voice (20 pts max)
+  const powerVerbs = ['architected', 'engineered', 'spearheaded', 'designed', 'optimized', 'developed', 'deployed', 'implemented', 'scaled', 'orchestrated', 'accelerated', 'built'];
+  const weakVerbs = ['helped', 'worked on', 'assisted', 'responsible for', 'participated in', 'handled'];
+  
+  const foundPowerVerbs = powerVerbs.filter(v => new RegExp(`\\b${v}\\b`, 'i').test(normalized));
+  const foundWeakVerbs = weakVerbs.filter(v => new RegExp(`\\b${v}\\b`, 'i').test(normalized));
+
+  let verbScore = 12 + Math.min(foundPowerVerbs.length * 2, 8) - Math.min(foundWeakVerbs.length * 2, 6);
+  verbScore = Math.max(8, Math.min(20, verbScore));
+
+  // 4. Structural Completeness & Sections (15 pts max)
+  const hasExperience = /(experience|work history|employment|professional background)/i.test(normalized);
+  const hasEducation = /(education|degree|bachelor|master|university|college|b\.s|b\.e|b\.tech)/i.test(normalized);
+  const hasProjects = /(projects|technical projects|key initiatives)/i.test(normalized);
+  const hasSkillsSection = /(skills|technologies|technical stack|competencies)/i.test(normalized);
+  const hasContact = /[\w.-]+@[\w.-]+\.\w+/.test(resumeText);
+
+  let structScore = 0;
+  if (hasExperience) structScore += 3;
+  if (hasEducation) structScore += 3;
+  if (hasProjects) structScore += 3;
+  if (hasSkillsSection) structScore += 3;
+  if (hasContact) structScore += 3;
+
+  // 5. Length & Readability (10 pts max)
+  const wordCount = resumeText.trim().split(/\s+/).filter(Boolean).length;
+  let lengthScore = 5;
+  if (wordCount >= 200 && wordCount <= 900) lengthScore = 10;
+  else if (wordCount >= 100) lengthScore = 8;
+
+  // Overall ATS Score (0 - 100)
+  const totalScore = Math.min(98, Math.max(38, keywordScore + metricScore + verbScore + structScore + lengthScore));
+
+  // Structured Findings for ATS & Analyzer Screen
+  const findings = {
+    Keywords: [
+      ...matchedKeywords.slice(0, 3).map(k => ({
+        type: 'good',
+        label: `Strong Match: "${k}" aligns with ${targetRole}`,
+        dotColor: '#00F5A0'
+      })),
+      ...missingKeywords.slice(0, 3).map(k => ({
+        type: 'missing',
+        label: `Missing Keyword: Add "${k}" for ${targetRole}`,
+        dotColor: '#EF4444'
+      })),
+      {
+        type: matchedKeywords.length >= 4 ? 'good' : 'weak',
+        label: `Identified ${matchedKeywords.length} core technical keywords for ${branch?.shortName || 'Engineering'}`,
+        dotColor: matchedKeywords.length >= 4 ? '#00F5A0' : '#F59E0B'
+      }
+    ].slice(0, 5),
+
+    Grammar: [
+      ...foundPowerVerbs.slice(0, 2).map(v => ({
+        type: 'good',
+        label: `Strong Action Verb: "${v.charAt(0).toUpperCase() + v.slice(1)}" used effectively`,
+        dotColor: '#00F5A0'
+      })),
+      ...foundWeakVerbs.slice(0, 2).map(w => ({
+        type: 'weak',
+        label: `Passive Phrasing: Replace "${w}" with high-impact engineering verbs`,
+        dotColor: '#F59E0B'
+      })),
+      {
+        type: foundMetrics.length > 0 ? 'good' : 'weak',
+        label: foundMetrics.length > 0
+          ? `Measurable Impact: Found ${foundMetrics.length} quantifiable metrics in project bullets`
+          : 'Missing Quantifiable Metrics: Add % latency, $ savings, or scale numbers',
+        dotColor: foundMetrics.length > 0 ? '#00F5A0' : '#F59E0B'
+      }
+    ].slice(0, 4),
+
+    Format: [
+      {
+        type: hasContact ? 'good' : 'weak',
+        label: hasContact ? 'Clean ATS-parseable email contact information detected' : 'Missing direct email address in header',
+        dotColor: hasContact ? '#00F5A0' : '#EF4444'
+      },
+      {
+        type: (hasSkillsSection && hasExperience) ? 'good' : 'weak',
+        label: (hasSkillsSection && hasExperience) ? 'Clean industry-standard section headings (Experience, Skills)' : 'Include distinct Experience and Skills section headings',
+        dotColor: (hasSkillsSection && hasExperience) ? '#00F5A0' : '#F59E0B'
+      },
+      {
+        type: (wordCount >= 200 && wordCount <= 900) ? 'good' : 'weak',
+        label: (wordCount >= 200 && wordCount <= 900)
+          ? `Ideal resume length (${wordCount} words - fits 1-2 pages)`
+          : `Resume word count (${wordCount} words) - recommended 300 to 750 words`,
+        dotColor: (wordCount >= 200 && wordCount <= 900) ? '#00F5A0' : '#F59E0B'
+      }
+    ]
+  };
+
+  return {
+    atsScore: totalScore,
+    scoreBreakdown: {
+      keywordScore,
+      metricScore,
+      verbScore,
+      structScore,
+      lengthScore
+    },
+    findings,
+    wordCount,
+    matchedCount: matchedKeywords.length,
+    missingCount: missingKeywords.length
+  };
+};
+
+/**
  * Main analysis function: parses resume text and produces a comprehensive tailored interview package
  */
 export const analyzeResumeForInterviews = (resumeText = '', fileName = 'Resume.pdf', selectedRole = null) => {
@@ -372,6 +514,9 @@ export const analyzeResumeForInterviews = (resumeText = '', fileName = 'Resume.p
 
   const codingRecommendation = getTailoredCodingChallenge(branch.branchId, skills);
 
+  // Run dynamic multi-factor ATS scanning
+  const atsData = calculateATSScoreAndFindings(resumeText, role, skills, branch);
+
   const analysis = {
     fileName,
     resumeName: fileName,
@@ -383,7 +528,10 @@ export const analyzeResumeForInterviews = (resumeText = '', fileName = 'Resume.p
     metrics,
     tailoredQuestions,
     codingRecommendation,
-    summary: `Analyzed resume for ${role} (${branch.shortName}). Detected ${skills.length} skills, ${projects.length} key projects, and ${metrics.length} business impact metrics.`
+    atsScore: atsData.atsScore,
+    scoreBreakdown: atsData.scoreBreakdown,
+    findings: atsData.findings,
+    summary: `Scanned resume for ${role} (${branch.shortName}): ATS Score ${atsData.atsScore}/100. Detected ${skills.length} skills, ${projects.length} key projects, and ${metrics.length} metrics.`
   };
 
   return analysis;
@@ -396,6 +544,9 @@ export const saveResumeAnalysis = (analysis) => {
   try {
     localStorage.setItem('candidate_resume', analysis.fileName || 'Resume.pdf');
     localStorage.setItem('candidate_resume_analysis', JSON.stringify(analysis));
+    if (analysis.atsScore) {
+      localStorage.setItem('candidate_ats_score', String(analysis.atsScore));
+    }
     if (analysis.skills?.length > 0) {
       localStorage.setItem('candidate_skills', JSON.stringify(analysis.skills));
     }
@@ -420,3 +571,37 @@ export const getActiveResumeAnalysis = () => {
   } catch (e) {}
   return null;
 };
+
+/**
+ * User Interview History Management
+ * Ensures every new user starts with 0 completed interviews
+ */
+export const getStoredInterviewHistory = () => {
+  try {
+    const raw = localStorage.getItem('candidate_interview_history');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch (e) {}
+  return [];
+};
+
+export const recordInterviewSession = (sessionData) => {
+  try {
+    const existing = getStoredInterviewHistory();
+    const newRecord = {
+      id: 'session_' + Date.now(),
+      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      ...sessionData
+    };
+    const updated = [newRecord, ...existing];
+    localStorage.setItem('candidate_interview_history', JSON.stringify(updated));
+    window.dispatchEvent(new CustomEvent('interview_history_updated', { detail: updated }));
+    return updated;
+  } catch (err) {
+    console.warn('Failed to record interview session:', err);
+    return [];
+  }
+};
+

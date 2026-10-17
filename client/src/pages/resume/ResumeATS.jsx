@@ -85,11 +85,15 @@ export const ResumeATS = () => {
       const tailored = analyzeResumeForInterviews(resumeText, 'ATS_Resume.pdf', targetRole);
       saveResumeAnalysis(tailored);
       setAtsResult({
-        score: 84,
+        score: tailored.atsScore || 75,
         skillsIdentified: tailored.skills,
-        sectionBreakdown: { metricCount: tailored.metrics?.length || 4 },
-        strengths: ['Identified modern architecture patterns and clean project descriptions', 'Strong metrics with clear impact indicators'],
-        improvements: ['Include additional keywords for distributed caching and container orchestration']
+        sectionBreakdown: { metricCount: tailored.metrics?.length || 4, ...(tailored.scoreBreakdown || {}) },
+        strengths: (tailored.findings?.Keywords?.filter(f => f.type === 'good').map(f => f.label) || []).length > 0
+          ? tailored.findings.Keywords.filter(f => f.type === 'good').map(f => f.label)
+          : ['Strong foundational project descriptions and domain metrics'],
+        improvements: (tailored.findings?.Keywords?.filter(f => f.type !== 'good').map(f => f.label) || []).length > 0
+          ? tailored.findings.Keywords.filter(f => f.type !== 'good').map(f => f.label)
+          : ['Add more quantified percentage improvements to your impact bullets']
       });
     } finally {
       setAnalyzing(false);

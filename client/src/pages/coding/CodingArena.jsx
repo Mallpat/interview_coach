@@ -21,7 +21,7 @@ import {
 } from 'lucide-react';
 
 import { ALL_CODING_CHALLENGES, getChallengeById } from '../../data/codingChallenges';
-import { getActiveResumeAnalysis } from '../../services/resumeAnalysisService';
+import { getActiveResumeAnalysis, recordInterviewSession } from '../../services/resumeAnalysisService';
 import { api } from '../../services/api';
 
 // Safe in-browser deep comparison for objects, arrays, and floating-point outputs
@@ -616,13 +616,23 @@ export const CodingArena = () => {
               <ArrowRight size={14} />
             </button>
             <button
-              onClick={() => navigate('/feedback-report', {
-                state: {
-                  problem: submissionReport.problemTitle,
-                  score: submissionReport.score,
-                  testResult: submissionReport.testsPassed
-                }
-              })}
+              onClick={() => {
+                const now = new Date();
+                recordInterviewSession({
+                  role: `Coding: ${submissionReport.problemTitle || 'Algorithm'}`,
+                  date: now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                  score: submissionReport.score || 85,
+                  duration: '15m',
+                  type: 'coding'
+                });
+                navigate('/feedback-report', {
+                  state: {
+                    problem: submissionReport.problemTitle,
+                    score: submissionReport.score,
+                    testResult: submissionReport.testsPassed
+                  }
+                });
+              }}
               style={{
                 background: '#0D1322',
                 border: '1px solid rgba(255, 255, 255, 0.15)',

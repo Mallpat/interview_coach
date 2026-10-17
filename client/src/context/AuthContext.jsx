@@ -24,14 +24,14 @@ const AuthContext = createContext(null);
 
 export const isInvalidOrAnanya = (name) => {
   if (!name || typeof name !== 'string') return false;
-  return /ananya/i.test(name.trim()) || /mallhar/i.test(name.trim()) || /mallpat/i.test(name.trim());
+  return /ananya/i.test(name.trim());
 };
 
 export const getSavedCandidateName = () => {
   try {
     const saved = localStorage.getItem('candidate_name');
     if (saved && saved.trim()) {
-      if (/ananya/i.test(saved) || /mallhar/i.test(saved) || /mallpat/i.test(saved)) {
+      if (/ananya/i.test(saved)) {
         localStorage.removeItem('candidate_name');
         return '';
       }
@@ -71,18 +71,13 @@ export const AuthProvider = ({ children }) => {
     setUser(prev => prev ? { ...prev, name: name } : { name });
   };
 
-  // Clear any legacy mock candidate details from localStorage and sync cross-component updates
+  // Sync cross-component updates and keep candidate name updated
   useEffect(() => {
     try {
       const stored = localStorage.getItem('candidate_name');
-      if (stored && (/ananya/i.test(stored) || /mallhar/i.test(stored) || /mallpat/i.test(stored))) {
+      if (stored && /ananya/i.test(stored)) {
         localStorage.removeItem('candidate_name');
         setCandidateNameState('');
-      }
-      const storedEmail = localStorage.getItem('candidate_email');
-      if (storedEmail && (/mallpat2008@gmail\.com/i.test(storedEmail) || /mallpat/i.test(storedEmail))) {
-        // Automatically purge any hardcoded test email stored on visitors' devices
-        localStorage.removeItem('candidate_email');
       }
     } catch (e) {}
 
@@ -113,15 +108,25 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
+          const storedName = firebaseUser.displayName || localStorage.getItem('candidate_name') || firebaseUser.email?.split('@')[0] || 'Candidate';
+          const storedEmail = firebaseUser.email || localStorage.getItem('candidate_email') || '';
+          const storedRole = localStorage.getItem('candidate_role') || 'Full Stack Engineer';
+          const storedResume = localStorage.getItem('candidate_resume') || '';
+
           const userData = {
             id: firebaseUser.uid,
             uid: firebaseUser.uid,
-            name: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Candidate',
-            email: firebaseUser.email,
+            name: storedName,
+            email: storedEmail,
             emailVerified: firebaseUser.emailVerified,
-            avatarUrl: firebaseUser.photoURL || null
+            avatarUrl: firebaseUser.photoURL || null,
+            resumeName: storedResume,
+            targetRole: storedRole
           };
           setUser(userData);
+          setCandidateNameState(storedName);
+          localStorage.setItem('candidate_name', storedName);
+          if (storedEmail) localStorage.setItem('candidate_email', storedEmail);
 
           // Get token and store for API authorization
           try {
@@ -134,13 +139,25 @@ export const AuthProvider = ({ children }) => {
           // Fetch stored profile from Firestore if available
           const firestoreDoc = await getUserFromFirestore(firebaseUser.uid);
           if (firestoreDoc?.profile) {
-            setProfile(firestoreDoc.profile);
+            setProfile(prev => ({ ...prev, ...firestoreDoc.profile }));
+            if (firestoreDoc.profile.fullName) {
+              setCandidateNameState(firestoreDoc.profile.fullName);
+              localStorage.setItem('candidate_name', firestoreDoc.profile.fullName);
+            }
+            if (firestoreDoc.profile.targetRole) {
+              localStorage.setItem('candidate_role', firestoreDoc.profile.targetRole);
+            }
           } else if (firestoreDoc?.fullName) {
             setProfile(prev => ({
               ...prev,
               fullName: firestoreDoc.fullName,
               targetRole: firestoreDoc.targetRole || prev.targetRole
             }));
+            setCandidateNameState(firestoreDoc.fullName);
+            localStorage.setItem('candidate_name', firestoreDoc.fullName);
+          }
+          if (firestoreDoc?.resumeName) {
+            localStorage.setItem('candidate_resume', firestoreDoc.resumeName);
           }
         } else {
           // User is signed out
@@ -172,20 +189,43 @@ export const AuthProvider = ({ children }) => {
       // Record login in Firestore
       await recordUserLoginInFirestore(firebaseUser.uid, firebaseUser.email);
 
+      const resolvedName = firebaseUser.displayName || localStorage.getItem('candidate_name') || email.split('@')[0] || 'Candidate';
+      const storedResume = localStorage.getItem('candidate_resume') || '';
+      const storedRole = localStorage.getItem('candidate_role') || 'Full Stack Engineer';
+
       const userData = {
         id: firebaseUser.uid,
         uid: firebaseUser.uid,
-        name: firebaseUser.displayName || email.split('@')[0],
+        name: resolvedName,
         email: firebaseUser.email,
         emailVerified: firebaseUser.emailVerified,
-        avatarUrl: firebaseUser.photoURL || null
+        avatarUrl: firebaseUser.photoURL || null,
+        resumeName: storedResume,
+        targetRole: storedRole
       };
       setUser(userData);
+      setCandidateNameState(resolvedName);
+      localStorage.setItem('candidate_name', resolvedName);
+      if (firebaseUser.email) localStorage.setItem('candidate_email', firebaseUser.email);
 
       // Load Firestore profile if existing
       const firestoreDoc = await getUserFromFirestore(firebaseUser.uid);
       if (firestoreDoc?.profile) {
-        setProfile(firestoreDoc.profile);
+        setProfile(prev => ({ ...prev, ...firestoreDoc.profile }));
+        if (firestoreDoc.profile.fullName) {
+          setCandidateNameState(firestoreDoc.profile.fullName);
+          localStorage.setItem('candidate_name', firestoreDoc.profile.fullName);
+        }
+        if (firestoreDoc.profile.targetRole) {
+          localStorage.setItem('candidate_role', firestoreDoc.profile.targetRole);
+        }
+      } else if (firestoreDoc?.fullName) {
+        setProfile(prev => ({ ...prev, fullName: firestoreDoc.fullName, targetRole: firestoreDoc.targetRole || prev.targetRole }));
+        setCandidateNameState(firestoreDoc.fullName);
+        localStorage.setItem('candidate_name', firestoreDoc.fullName);
+      }
+      if (firestoreDoc?.resumeName) {
+        localStorage.setItem('candidate_resume', firestoreDoc.resumeName);
       }
 
       return userData;
@@ -443,15 +483,42 @@ export const AuthProvider = ({ children }) => {
       try {
         localStorage.setItem('candidate_name', newProfile.fullName);
       } catch (e) {}
+      setCandidateNameState(newProfile.fullName);
       setUser(prev => prev ? { ...prev, name: newProfile.fullName } : { name: newProfile.fullName });
     }
+    if (newProfile.targetRole) {
+      try {
+        localStorage.setItem('candidate_role', newProfile.targetRole);
+      } catch (e) {}
+      setUser(prev => prev ? { ...prev, targetRole: newProfile.targetRole } : prev);
+    }
+    if (newProfile.resumeName) {
+      try {
+        localStorage.setItem('candidate_resume', newProfile.resumeName);
+      } catch (e) {}
+      setUser(prev => prev ? { ...prev, resumeName: newProfile.resumeName } : prev);
+    }
+    if (newProfile.email) {
+      try {
+        localStorage.setItem('candidate_email', newProfile.email);
+      } catch (e) {}
+      setUser(prev => prev ? { ...prev, email: newProfile.email } : prev);
+    }
+
     setProfile(prev => ({ ...prev, ...newProfile }));
 
     // Persist to Firestore if user is authenticated
     if (user?.uid) {
-      await saveUserToFirestore(user.uid, {
-        profile: { ...profile, ...newProfile }
-      });
+      try {
+        await saveUserToFirestore(user.uid, {
+          profile: { ...profile, ...newProfile },
+          fullName: newProfile.fullName || profile.fullName,
+          targetRole: newProfile.targetRole || profile.targetRole,
+          resumeName: newProfile.resumeName || profile.resumeName
+        });
+      } catch (e) {
+        console.warn('Firestore profile persist notice:', e.message);
+      }
     }
 
     // Also notify local backend if reachable

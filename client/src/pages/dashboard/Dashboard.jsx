@@ -1,7 +1,8 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { Mic, Code, Sparkles, ArrowRight, TrendingUp } from 'lucide-react';
+import { Mic, Code, Sparkles, ArrowRight, TrendingUp, Code2, FileText } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { getActiveResumeAnalysis } from '../../services/resumeAnalysisService';
 
 export const Dashboard = () => {
   const navigate = useNavigate();
@@ -242,6 +243,53 @@ export const Dashboard = () => {
           </div>
         </div>
       </div>
+
+      {/* Resume Calibration Status (if active) */}
+      {(() => {
+        const activeResumeAnalysis = getActiveResumeAnalysis();
+        if (!activeResumeAnalysis) return null;
+        return (
+          <div style={{
+            background: 'linear-gradient(135deg, rgba(0, 245, 160, 0.08) 0%, rgba(13, 19, 34, 0.95) 100%)',
+            border: '1px solid rgba(0, 245, 160, 0.28)',
+            borderRadius: '16px',
+            padding: '0.85rem 1rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '8px'
+          }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', textAlign: 'left' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                <Sparkles size={13} color="#00F5A0" />
+                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#00F5A0', letterSpacing: '0.04em' }}>
+                  RESUME CALIBRATED
+                </span>
+              </div>
+              <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#FFFFFF' }}>
+                {activeResumeAnalysis.role || 'Target Role'} ({activeResumeAnalysis.branch?.shortName || 'Engineering'})
+              </span>
+              <span style={{ fontSize: '0.68rem', color: '#94A3B8' }}>
+                {activeResumeAnalysis.skills?.slice(0, 3).join(' • ') || 'Tailored Rounds Ready'}
+              </span>
+            </div>
+
+            <button
+              onClick={() => navigate('/voice-interview')}
+              className="btn-teal-glow"
+              style={{
+                padding: '0.45rem 0.75rem',
+                borderRadius: '10px',
+                fontSize: '0.72rem',
+                flexShrink: 0
+              }}
+            >
+              <span>Practice</span>
+              <ArrowRight size={13} />
+            </button>
+          </div>
+        );
+      })()}
 
       {/* Main Action Buttons (Voice mock interview & Coding round) */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem', marginTop: '0.25rem' }}>

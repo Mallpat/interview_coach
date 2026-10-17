@@ -74,8 +74,20 @@ Return your response in valid JSON format:
     }
   }
 
-  // Resilient fallback using domain question banks
-  const bank = QUESTION_BANK[role] || QUESTION_BANK["Full Stack Engineer"];
+  // Resilient fallback using domain question banks across engineering branches
+  let bankKey = Object.keys(QUESTION_BANK).find(k => k.toLowerCase() === (role || '').toLowerCase());
+  if (!bankKey && role) {
+    const rLower = role.toLowerCase();
+    if (rLower.includes('mech') || rLower.includes('automotive') || rLower.includes('fea')) bankKey = 'Mechanical Design Engineer';
+    else if (rLower.includes('ai') || rLower.includes('machine learning') || rLower.includes('data sci') || rLower.includes('llm')) bankKey = 'AI & ML Engineer';
+    else if (rLower.includes('embed') || rLower.includes('vlsi') || rLower.includes('pcb') || rLower.includes('hardware') || rLower.includes('electric')) bankKey = 'Embedded Systems & Firmware Engineer';
+    else if (rLower.includes('civil') || rLower.includes('structur') || rLower.includes('construct')) bankKey = 'Structural Design Engineer';
+    else if (rLower.includes('robot') || rLower.includes('automa') || rLower.includes('plc')) bankKey = 'Robotics & Autonomous Systems Engineer';
+    else if (rLower.includes('cloud') || rLower.includes('devops')) bankKey = 'Cloud & DevOps Engineer';
+    else if (rLower.includes('back')) bankKey = 'Backend Engineer';
+    else if (rLower.includes('front')) bankKey = 'Frontend Engineer';
+  }
+  const bank = QUESTION_BANK[bankKey] || QUESTION_BANK["Full Stack Engineer"];
   const selected = bank[(questionIndex - 1) % bank.length];
 
   return {

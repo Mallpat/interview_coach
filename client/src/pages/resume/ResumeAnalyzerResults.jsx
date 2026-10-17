@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { ArrowRight, Sparkles, Mic, Code2 } from 'lucide-react';
 
 export const ResumeAnalyzerResults = () => {
   const navigate = useNavigate();
@@ -161,13 +161,57 @@ export const ResumeAnalyzerResults = () => {
         ))}
       </div>
 
+      {/* Resume-Tailored Action Launchers */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.65rem', marginTop: '0.25rem' }}>
+        <button
+          onClick={() => navigate('/voice-interview')}
+          style={{
+            background: 'rgba(0, 245, 160, 0.12)',
+            border: '1px solid rgba(0, 245, 160, 0.35)',
+            color: '#00F5A0',
+            padding: '0.8rem',
+            borderRadius: '12px',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px'
+          }}
+        >
+          <Mic size={15} />
+          <span>Tailored Voice Q&A</span>
+        </button>
+
+        <button
+          onClick={() => navigate('/coding')}
+          style={{
+            background: 'rgba(0, 242, 254, 0.12)',
+            border: '1px solid rgba(0, 242, 254, 0.35)',
+            color: '#00F2FE',
+            padding: '0.8rem',
+            borderRadius: '12px',
+            fontSize: '0.8rem',
+            fontWeight: 700,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '6px'
+          }}
+        >
+          <Code2 size={15} />
+          <span>Tailored Coding Round</span>
+        </button>
+      </div>
+
       {/* Match with Job Description CTA */}
       <button
         onClick={() => navigate('/jd-analyzer')}
         className="btn-teal-glow"
         style={{
           width: '100%',
-          marginTop: '0.5rem',
           padding: '0.85rem',
           borderRadius: '14px'
         }}

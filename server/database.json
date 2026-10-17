@@ -28,6 +28,17 @@
       "verificationCode": "746830",
       "createdAt": "2026-09-07T16:42:45.398Z",
       "updatedAt": "2026-09-07T16:42:45.401Z"
+    },
+    {
+      "id": "user-1791864252171",
+      "email": "test.candidate@gmail.com",
+      "passwordHash": "$2a$10$ErrZM1K8pPcMSmBI37lBl.uQMWrF71p//gwdnDe2.lZu5gxovvcSu",
+      "name": "Test Candidate",
+      "avatarUrl": "https://api.dicebear.com/7.x/bottts/svg?seed=Test%20Candidate",
+      "emailVerified": false,
+      "verificationCode": "723184",
+      "createdAt": "2026-10-13T04:04:12.171Z",
+      "updatedAt": "2026-10-13T04:04:12.171Z"
     }
   ],
   "profiles": [
@@ -58,6 +69,15 @@
       "techStack": "C++, Rust, Distributed Systems",
       "targetCompany": "Top Tech",
       "updatedAt": "2026-09-07T16:42:45.402Z"
+    },
+    {
+      "id": "profile-1791864252173",
+      "userId": "user-1791864252171",
+      "targetRole": "Full Stack Engineer",
+      "experience": "Mid-Level (2-4 yrs)",
+      "techStack": "React, Node.js, TypeScript",
+      "targetCompany": "Top Tech",
+      "updatedAt": "2026-10-13T04:04:12.173Z"
     }
   ],
   "interview_sessions": [
@@ -443,6 +463,20 @@
       "runtimeMs": 7.04,
       "aiReview": "{\"timeComplexity\":\"O(n)\",\"spaceComplexity\":\"O(n)\",\"verdict\":\"Optimal\",\"review\":\"Clean implementation. Good variable naming and handles primary constraints smoothly.\",\"optimizationTip\":\"Ensure memory usage is minimized by avoiding redundant object allocations in loops.\"}",
       "submittedAt": "2026-09-07T16:28:38.669Z"
+    },
+    {
+      "id": "sub-1791864325782",
+      "userId": "user-demo-123",
+      "challengeId": "chal-two-sum",
+      "code": "function twoSum(nums, target) { const map = new Map(); for (let i = 0; i < nums.length; i++) { const comp = target - nums[i]; if (map.has(comp)) return [map.get(comp), i]; map.set(nums[i], i); } return []; }",
+      "language": "javascript",
+      "status": "passed",
+      "score": 100,
+      "passedCount": 4,
+      "totalCount": 4,
+      "runtimeMs": 5.15,
+      "aiReview": "{\"timeComplexity\":\"O(n)\",\"spaceComplexity\":\"O(n)\",\"verdict\":\"Optimal\",\"review\":\"Clean implementation. Good variable naming and handles primary constraints smoothly.\",\"optimizationTip\":\"Ensure memory usage is minimized by avoiding redundant object allocations in loops.\"}",
+      "submittedAt": "2026-10-13T04:05:25.782Z"
     }
   ],
   "resumes": [
@@ -489,6 +523,20 @@
       "role": "assistant",
       "content": "### Strategic Salary Negotiation Playbook\n\n1. **Never Give the First Number**: When asked for expectations, respond: *\"I'm focused on finding the right cultural and technical fit first. Once we agree I'm the right engineer for the role, I'm confident we can find a mutually competitive package.\"*\n2. **Anchor on Market Data**: Cite Levels.fyi or Carta data for your target role (Full Stack Engineer).\n3. **Counter with Total Compensation (TC)**: Split between Base, Equity/RSUs, and Sign-on bonus. Always negotiate the sign-on bonus if base salary bands are strict.\n4. **Leverage Competing Timelines**: Frame active interview loops politely to accelerate decisions.",
       "createdAt": "2026-09-07T16:28:38.696Z"
+    },
+    {
+      "id": "msg-1791864381123-user",
+      "conversationId": "mentor-conv-1788798518692",
+      "role": "user",
+      "content": "What are the core components of the STAR framework?",
+      "createdAt": "2026-10-13T04:06:21.123Z"
+    },
+    {
+      "id": "msg-1791864389764-ai",
+      "conversationId": "mentor-conv-1788798518692",
+      "role": "assistant",
+      "content": "The **STAR framework** is the industry standard for answering behavioral interview questions. For a **Senior Full Stack Engineer**, the key to mastering STAR is spending **70% of your time on the Action** and backing up the **Result with concrete metrics**.\n\nHere is the breakdown, tailored for a senior technical candidate:\n\n---\n\n### Core Components Breakdown\n\n*   **S — Situation (10–15% of your answer)**\n    *   **Goal:** Set the scene quickly. What was the company, project, or technical environment?\n    *   **Senior Tip:** Mention the scope (users, system scale, or team size) to establish complexity immediately.\n    *   *Verbatim Phrase:* `\"At [Company], our core API was struggling under peak load during [Event]...\"`\n\n*   **T — Task (10–15% of your answer)**\n    *   **Goal:** Define *your* explicit responsibility. What was the core challenge or goal you needed to achieve?\n    *   **Senior Tip:** Distinguish between what the *team* needed to do vs. what *you* were accountable for.\n    *   *Verbatim Phrase:* `\"My specific objective was to redesign our caching layer and reduce PostgreSQL load without adding significant infrastructure overhead.\"`\n\n*   **A — Action (60–70% of your answer) — *THE MOST IMPORTANT PART***\n    *   **Goal:** Explain the technical execution, trade-offs, and leadership actions *you* took.\n    *   **Senior Tip:** Focus on *why* you chose specific technologies or patterns (e.g., Redis for session state, React query optimizations, Express middleware tuning). Highlight cross-functional communication or technical mentoring.\n    *   *Verbatim Phrase:* `\"I evaluated two options: DB read replicas vs. a Redis caching layer. I chose Redis because... I wrote the Node.js abstraction, mentored two junior engineers on cache invalidation strategies, and...\"`\n\n*   **R — Result (10–15% of your answer)**\n    *   **Goal:** Share the quantifiable impact and long-term outcome.\n    *   **Senior Tip:** Use hard numbers (latency, uptime, cost savings, PR review speed). Mention takeaways or what you’d do differently.\n    *   *Verbatim Phrase:* `\"As a result, p99 API latency dropped from 450ms to 80ms, DB CPU utilization dropped by 40%, and the architecture handled a 3x traffic spike without downtime.\"`\n\n---\n\n### Pro-Tip for Senior Engineers: The \"STAR-L\" Add-on\nAdd an **L (Learnings)** at the end. Showing self-reflection (e.g., *\"If I were to do it again, I would have set up distributed tracing earlier...\"*) instantly signals senior-level technical maturity.\n\n---\n\n### Ready to practice?\nPick one of these common senior behavioral themes, and draft a response using STAR:\n1. *A time you had to make a tough technical compromise to meet a deadline.*\n2. *A time you led a complex migration (e.g., DB schema, state management, API refactor).*\n3. *A time you resolved a conflict with a Product Manager over technical debt.*",
+      "createdAt": "2026-10-13T04:06:29.764Z"
     }
   ],
   "analytics_snapshots": [
@@ -554,6 +602,13 @@
       "metric": "ats_score",
       "value": 49,
       "recordedAt": "2026-09-07T16:28:38.683Z"
+    },
+    {
+      "id": "snapshot-1791864325787",
+      "userId": "user-demo-123",
+      "metric": "coding_score",
+      "value": 100,
+      "recordedAt": "2026-10-13T04:05:25.788Z"
     }
   ]
 }

@@ -13,8 +13,10 @@ import {
   Sparkles, 
   Activity,
   Volume2,
-  ChevronRight
+  ChevronRight,
+  Code2
 } from 'lucide-react';
+import { getActiveResumeAnalysis } from '../../services/resumeAnalysisService';
 
 const QUESTIONS_BY_ROLE = {
   Frontend: [
@@ -29,17 +31,77 @@ const QUESTIONS_BY_ROLE = {
     "How do you handle distributed transactions, data consistency, and failure recovery across services?",
     "Describe your strategy for rate limiting, JWT/OAuth authentication, and securing API endpoints."
   ],
+  "Full Stack": [
+    "How do you design a robust end-to-end web system with responsive frontend clients and horizontally scalable backend APIs?",
+    "Describe your approach to database schema design, migration strategies, and managing state across client and server.",
+    "What security protocols do you implement against XSS, CSRF, and SQL Injection in full-stack development?",
+    "Walk me through how you implement automated testing across unit, integration, and end-to-end layers."
+  ],
+  Mechanical: [
+    "Explain your approach to 3D CAD modeling, applying GD&T tolerancing, and designing for manufacturability (DFMA).",
+    "How do you conduct structural finite element analysis (FEA) or thermal/CFD simulations to validate mechanical designs?",
+    "Describe a physical prototype failure you analyzed, including the root cause, stress concentrations, and remediation.",
+    "How do you balance material selection, manufacturing costs, and safety factors under cyclic mechanical fatigue?"
+  ],
+  "AI & ML": [
+    "Explain your workflow for training, fine-tuning, and evaluating machine learning or deep learning models in production.",
+    "How do you architect Retrieval-Augmented Generation (RAG) pipelines, semantic chunking, and vector database embeddings?",
+    "Describe how you handle data drift, class imbalance, and model hallucinations in real-world ML systems.",
+    "Walk me through how you optimize inference latency using model quantization, TensorRT, or ONNX runtimes."
+  ],
+  Electrical: [
+    "Walk me through your experience developing firmware with Embedded C, FreeRTOS, and low-level communication protocols like SPI, I2C, and UART.",
+    "How do you approach multi-layer PCB design, high-speed signal routing, and mitigating electromagnetic interference (EMI/EMC)?",
+    "Describe how you debug hardware-software race conditions using oscilloscopes, logic analyzers, and GDB.",
+    "Explain your experience with microcontrollers (STM32/ESP32), power management, or FPGA/VLSI timing closure."
+  ],
+  Civil: [
+    "Walk me through how you analyze structural loads (dead, live, seismic, wind) using tools like STAAD.Pro or ETABS.",
+    "How do you ensure building code compliance and safety standards for reinforced concrete (RCC) and structural steel?",
+    "Describe a challenging site execution or soil foundation obstacle you managed, and how you ensured project schedule adherence.",
+    "How do you perform accurate quantity surveying, material estimation, and quality assurance on construction projects?"
+  ],
+  Robotics: [
+    "Explain how you design robot control architectures using ROS/ROS 2, publisher-subscriber nodes, and real-time state machines.",
+    "How do you approach kinematics, trajectory planning (MoveIt), and simultaneous localization and mapping (SLAM)?",
+    "Describe how you integrate multi-sensor fusion (LiDAR, IMU, depth cameras) to navigate dynamic unstructured environments.",
+    "Tell me about a challenging motor control, PID tuning, or hardware actuator constraint you solved."
+  ],
+  Chemical: [
+    "Walk me through how you simulate continuous chemical processes, mass and heat balances using tools like Aspen Plus or HYSYS.",
+    "How do you approach process safety management, hazard identification (HAZOP), and sizing relief valves or reactors?",
+    "Describe an optimization you implemented on a distillation column, heat exchanger network, or reaction vessel.",
+    "How do you translate Piping and Instrumentation Diagrams (P&IDs) into safe, efficient plant commissioning procedures?"
+  ],
+  Aerospace: [
+    "Explain how you analyze aerodynamic performance, lift-to-drag ratios, and compressible flow across transonic flight regimes.",
+    "How do you design and validate flight control laws, stability derivatives, and safety-critical avionics standards like DO-178C?",
+    "Describe your approach to structural fatigue, composite materials, and thermal protection under aerospace operating conditions.",
+    "Walk me through thermodynamic cycle calculations for gas turbine turbofans or rocket propulsion systems."
+  ],
+  Biomedical: [
+    "How do you approach medical device instrumentation, bio-signal acquisition (ECG/EEG), and noise filtering?",
+    "Explain your familiarity with FDA regulatory submissions (510(k)) and ISO 13485 quality management for medical devices.",
+    "Describe how you evaluate biocompatibility, electrical safety (IEC 60601), and patient isolation in clinical hardware.",
+    "Walk me through a biomedical sensing or imaging algorithm you implemented and clinically validated."
+  ],
+  IT: [
+    "How do you design, secure, and maintain enterprise infrastructure spanning Active Directory, Windows Server, and Linux?",
+    "Explain your approach to network subnetting, routing, VPN tunnels, and firewall rule enforcement across multi-site enterprises.",
+    "Describe a high-severity enterprise service disruption you triaged, including root cause analysis and DR failover.",
+    "How do you manage database administration (DBA), high-availability replication, and automated disaster recovery?"
+  ],
+  DevOps: [
+    "Walk me through your CI/CD deployment pipeline with Docker, Kubernetes, and automated canary rollbacks.",
+    "How do you monitor infrastructure health, trace microservice latencies, and alert on SLIs/SLOs with Prometheus and Grafana?",
+    "Describe a high-severity production outage you mitigated, including the root cause and remediation.",
+    "How do you enforce security best practices, secret management, and Infrastructure as Code (Terraform)?"
+  ],
   Data: [
     "Walk me through how you design automated ETL pipelines and handle data validation and schema drift.",
     "How do you optimize analytical queries on partitioned and clustered data warehouses like BigQuery or Snowflake?",
     "Describe an end-to-end data or machine learning feature you delivered, and how you ensured data quality.",
     "How do you balance batch processing vs real-time streaming architectures for large event streams?"
-  ],
-  DevOps: [
-    "Walk me through your CI/CD deployment pipeline with Docker, Kubernetes, and automated canary rollbacks.",
-    "How do you monitor infrastructure health, trace microservice latencies, and alert on SLIs/SLOs?",
-    "Describe a high-severity production outage you mitigated, including the root cause and remediation.",
-    "How do you enforce security best practices, secret management, and Infrastructure as Code (Terraform)?"
   ],
   General: [
     "Tell me about a challenging engineering project you led from concept to production.",
@@ -58,18 +120,79 @@ export const VoiceInterviewScreen = () => {
   const rawResume = location.state?.resumeName || localStorage.getItem('candidate_resume') || '';
   const candidateResume = (/resume_final/i.test(rawResume)) ? '' : rawResume;
 
+  const activeResumeAnalysis = useMemo(() => {
+    return getActiveResumeAnalysis();
+  }, []);
+
   // Build questions tailored to selected role & uploaded resume
-  const questionsList = useMemo(() => {
-    const roleKey = Object.keys(QUESTIONS_BY_ROLE).find(k => k.toLowerCase() === role.toLowerCase()) || 'Frontend';
-    const base = QUESTIONS_BY_ROLE[roleKey] || QUESTIONS_BY_ROLE.Frontend;
-    if (candidateResume) {
-      return [
-        `Based on your resume (${candidateResume}), walk me through your most impactful technical achievement and the challenges you solved.`,
-        ...base
-      ];
+  const { questionsList, coachTips } = useMemo(() => {
+    // 1. If candidate has an analyzed resume with tailored questions, prioritize them
+    if (activeResumeAnalysis?.tailoredQuestions?.length > 0) {
+      const list = activeResumeAnalysis.tailoredQuestions.map(q => q.question || q);
+      const tips = activeResumeAnalysis.tailoredQuestions.map(q => q.coachTip || 'Structure your answer using the STAR method: Situation, Task, Action, Result.');
+      return { questionsList: list, coachTips: tips };
     }
-    return base;
-  }, [role, candidateResume]);
+
+    const normalizedRole = role.toLowerCase();
+    
+    // Multi-branch fuzzy matching
+    let matchedKey = 'General';
+    if (normalizedRole.includes('mech') || normalizedRole.includes('automotive') || normalizedRole.includes('fea')) {
+      matchedKey = 'Mechanical';
+    } else if (normalizedRole.includes('ai') || normalizedRole.includes('machine learning') || normalizedRole.includes('data sci') || normalizedRole.includes('nlp') || normalizedRole.includes('vision') || normalizedRole.includes('llm')) {
+      matchedKey = 'AI & ML';
+    } else if (normalizedRole.includes('embed') || normalizedRole.includes('vlsi') || normalizedRole.includes('pcb') || normalizedRole.includes('electric') || normalizedRole.includes('hardware')) {
+      matchedKey = 'Electrical';
+    } else if (normalizedRole.includes('civil') || normalizedRole.includes('structur') || normalizedRole.includes('construct')) {
+      matchedKey = 'Civil';
+    } else if (normalizedRole.includes('robot') || normalizedRole.includes('plc') || normalizedRole.includes('automa')) {
+      matchedKey = 'Robotics';
+    } else if (normalizedRole.includes('chem') || normalizedRole.includes('petro')) {
+      matchedKey = 'Chemical';
+    } else if (normalizedRole.includes('aero') || normalizedRole.includes('flight') || normalizedRole.includes('propuls')) {
+      matchedKey = 'Aerospace';
+    } else if (normalizedRole.includes('biomed') || normalizedRole.includes('medical')) {
+      matchedKey = 'Biomedical';
+    } else if (normalizedRole.includes('devops') || normalizedRole.includes('cloud')) {
+      matchedKey = 'DevOps';
+    } else if (normalizedRole.includes('infra') || normalizedRole.includes('network') || normalizedRole.includes('dba') || normalizedRole.includes('it ')) {
+      matchedKey = 'IT';
+    } else if (normalizedRole.includes('data eng') || normalizedRole.includes('spark') || normalizedRole.includes('etl')) {
+      matchedKey = 'Data';
+    } else if (normalizedRole.includes('full stack')) {
+      matchedKey = 'Full Stack';
+    } else if (normalizedRole.includes('backend') || normalizedRole.includes('back-end') || normalizedRole.includes('api')) {
+      matchedKey = 'Backend';
+    } else if (normalizedRole.includes('front') || normalizedRole.includes('react') || normalizedRole.includes('web')) {
+      matchedKey = 'Frontend';
+    }
+
+    const base = QUESTIONS_BY_ROLE[matchedKey] || QUESTIONS_BY_ROLE.General;
+    if (candidateResume) {
+      return {
+        questionsList: [
+          `Based on your resume (${candidateResume}), walk me through your most impactful technical achievement and the challenges you solved.`,
+          ...base
+        ],
+        coachTips: [
+          'Highlight specific metrics, architecture decisions, and business impact from your resume.',
+          'Structure your response using STAR: Situation, Task, Action, Result.',
+          'Quantify speedups, scale, or cost reductions where possible.',
+          'Emphasize root cause analysis and trade-offs made.',
+          'Be clear, structured, and confident.'
+        ]
+      };
+    }
+    return {
+      questionsList: base,
+      coachTips: [
+        'Structure your answer using the STAR method: Situation, Task, Action, Result.',
+        'Emphasize technical architecture, trade-offs, and scalability.',
+        'Highlight debugging methodologies and metrics.',
+        'Be clear, concise, and structured.'
+      ]
+    };
+  }, [role, candidateResume, activeResumeAnalysis]);
 
   const [questionIndex, setQuestionIndex] = useState(0);
   const [isSpeakingQuestion, setIsSpeakingQuestion] = useState(false);
@@ -477,7 +600,22 @@ export const VoiceInterviewScreen = () => {
             </span>
           </div>
 
-          {candidateResume ? (
+          {activeResumeAnalysis ? (
+            <span style={{
+              color: '#00F5A0',
+              fontWeight: 700,
+              fontSize: '0.68rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'rgba(0, 245, 160, 0.12)',
+              padding: '0.15rem 0.5rem',
+              borderRadius: '9999px',
+              border: '1px solid rgba(0, 245, 160, 0.3)'
+            }}>
+              <Sparkles size={11} /> Resume-Grounded
+            </span>
+          ) : candidateResume ? (
             <span style={{
               color: '#00F5A0',
               fontWeight: 600,
@@ -501,12 +639,32 @@ export const VoiceInterviewScreen = () => {
           fontWeight: 600,
           color: '#FFFFFF',
           lineHeight: 1.4,
-          margin: '0 0 0.55rem 0'
+          margin: '0 0 0.45rem 0'
         }}>
           "{currentQuestion}"
         </p>
 
-        {/* Action Controls: Read Aloud & Next Question */}
+        {/* AI Coach Hint / STAR Guidance */}
+        {coachTips[questionIndex % coachTips.length] && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'flex-start',
+            gap: '6px',
+            background: 'rgba(0, 245, 160, 0.05)',
+            border: '1px dashed rgba(0, 245, 160, 0.22)',
+            borderRadius: '8px',
+            padding: '0.35rem 0.55rem',
+            marginBottom: '0.55rem',
+            fontSize: '0.72rem',
+            color: '#CBD5E1',
+            lineHeight: 1.35
+          }}>
+            <Sparkles size={12} color="#00F5A0" style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span><strong style={{ color: '#00F5A0' }}>AI Coach Tip:</strong> {coachTips[questionIndex % coachTips.length]}</span>
+          </div>
+        )}
+
+        {/* Action Controls: Read Aloud & Next Question & Coding Jump */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
@@ -535,26 +693,50 @@ export const VoiceInterviewScreen = () => {
             <span>{isSpeakingQuestion ? 'Speaking...' : 'Listen'}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleNextQuestion}
-            style={{
-              background: 'rgba(0, 245, 160, 0.1)',
-              border: '1px solid rgba(0, 245, 160, 0.3)',
-              borderRadius: '8px',
-              padding: '0.25rem 0.65rem',
-              color: '#00F5A0',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: '4px',
-              cursor: 'pointer'
-            }}
-          >
-            <span>Next Question</span>
-            <ChevronRight size={13} />
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button
+              type="button"
+              onClick={() => navigate('/coding')}
+              style={{
+                background: 'rgba(255, 255, 255, 0.04)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '8px',
+                padding: '0.25rem 0.55rem',
+                color: '#94A3B8',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                cursor: 'pointer'
+              }}
+              title="Open Coding Arena"
+            >
+              <Code2 size={12} color="#00F5A0" />
+              <span>Coding Round</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleNextQuestion}
+              style={{
+                background: 'rgba(0, 245, 160, 0.1)',
+                border: '1px solid rgba(0, 245, 160, 0.3)',
+                borderRadius: '8px',
+                padding: '0.25rem 0.65rem',
+                color: '#00F5A0',
+                fontSize: '0.72rem',
+                fontWeight: 700,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              <span>Next Question</span>
+              <ChevronRight size={13} />
+            </button>
+          </div>
         </div>
       </div>
 

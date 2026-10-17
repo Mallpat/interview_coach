@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "781594878734",
+    "project_id": "antiinterviewcoach",
+    "storage_bucket": "antiinterviewcoach.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:781594878734:android:d87e6ca593653ee048ed5f",
+        "android_client_info": {
+          "package_name": "com.aiinterviewcoach.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBzuDUpkRSR1aKmyJTcfKxRczP1XmBnW-c"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

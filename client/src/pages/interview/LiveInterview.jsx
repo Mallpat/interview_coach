@@ -25,13 +25,17 @@ import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 import { useCameraVision } from '../../hooks/useCameraVision';
 import { InterviewReport } from './InterviewReport';
 import { io } from 'socket.io-client';
+import { useAuth } from '../../context/AuthContext';
 
 export const LiveInterview = () => {
   const navigate = useNavigate();
+  const { profile } = useAuth();
 
   // Setup state
   const [inSession, setInSession] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('Full Stack Engineer');
+  const [selectedRole, setSelectedRole] = useState(() => {
+    return profile?.targetRole || localStorage.getItem('candidate_role') || 'Full Stack Engineer';
+  });
   const [selectedDifficulty, setSelectedDifficulty] = useState('Senior');
   const [selectedType, setSelectedType] = useState('Technical & Behavioral');
   const [questionCount, setQuestionCount] = useState(3);
@@ -193,7 +197,17 @@ export const LiveInterview = () => {
               Target Job Role
             </label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(190px, 1fr))', gap: '0.75rem' }}>
-              {['Full Stack Engineer', 'Frontend Engineer', 'Backend Engineer', 'AI / ML Engineer', 'DevOps Engineer', 'System Architect'].map((role) => (
+              {[
+                selectedRole,
+                'Full Stack Engineer',
+                'Frontend Engineer',
+                'Backend Engineer',
+                'AI & Machine Learning Engineer',
+                'Mechanical Design Engineer',
+                'Embedded Systems & Firmware Engineer',
+                'Structural Design Engineer',
+                'Cloud & DevOps Engineer'
+              ].filter((r, i, arr) => r && arr.indexOf(r) === i).map((role) => (
                 <button
                   key={role}
                   type="button"

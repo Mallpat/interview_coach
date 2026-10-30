@@ -15,7 +15,8 @@ import {
   Mic, 
   RefreshCw, 
   AlertCircle, 
-  CheckCircle2 
+  CheckCircle2,
+  Plus 
 } from 'lucide-react';
 import { useAuth, isInvalidName } from '../../context/AuthContext';
 import { 

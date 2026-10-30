@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth, isInvalidName } from './context/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { MobileTopBar } from './layouts/MobileTopBar';
 import { MobileBottomNav } from './layouts/MobileBottomNav';
 
@@ -46,6 +47,53 @@ import { AdminPanel } from './pages/admin/AdminPanel';
 
 // Screen 22: Profile & Settings
 import { Profile } from './pages/profile/Profile';
+
+const checkProfileComplete = (profile, candidateName) => {
+  const rawName = candidateName || profile?.fullName || localStorage.getItem('candidate_name');
+  const hasValidName = rawName && typeof rawName === 'string' && rawName.trim().length >= 2 && !isInvalidName(rawName);
+  return Boolean(
+    (profile?.profileCompleted || localStorage.getItem('candidate_profile_completed') === 'true') &&
+    hasValidName
+  );
+};
+
+const RootRedirect = () => {
+  const { user, profile, candidateName, loading } = useAuth();
+  if (loading) {
+    return (
+      <div style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '60vh',
+        color: '#94A3B8'
+      }}>
+        <div style={{
+          width: '36px',
+          height: '36px',
+          borderRadius: '50%',
+          border: '3px solid rgba(0, 245, 160, 0.2)',
+          borderTopColor: '#00F5A0',
+          animation: 'spin 0.8s linear infinite'
+        }} />
+      </div>
+    );
+  }
+  if (!user) return <GetStartedPage />;
+  return checkProfileComplete(profile, candidateName)
+    ? <Navigate to="/dashboard" replace />
+    : <Navigate to="/profile-setup" replace />;
+};
+
+const AuthRoute = ({ children }) => {
+  const { user, profile, candidateName, loading } = useAuth();
+  if (loading) return null;
+  if (!user) return children;
+  return checkProfileComplete(profile, candidateName)
+    ? <Navigate to="/dashboard" replace />
+    : <Navigate to="/profile-setup" replace />;
+};
 
 const MobileAppShell = () => {
   // On a real Android device (Capacitor native), disable the simulator frame.
@@ -128,77 +176,70 @@ const MobileAppShell = () => {
           flexDirection: 'column'
         }}>
           <Routes>
-            {/* Screen 1: Get Started */}
-            <Route path="/get-started" element={<GetStartedPage />} />
+            {/* Entry Route: Auto redirects to /dashboard if logged in, else Welcome */}
+            <Route path="/" element={<RootRedirect />} />
 
-            {/* Screen 2: Signup + Resume */}
-            <Route path="/signup" element={<SignupPage />} />
-
-            {/* Screen 3: Login */}
-            <Route path="/login" element={<LoginPage />} />
-
-            {/* Screen 4: Forgot Password */}
+            {/* Public Auth Routes */}
+            <Route path="/get-started" element={<AuthRoute><GetStartedPage /></AuthRoute>} />
+            <Route path="/signup" element={<AuthRoute><SignupPage /></AuthRoute>} />
+            <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-
-            {/* Email Verification */}
             <Route path="/verify-email" element={<EmailVerificationPage />} />
 
-            {/* Screen 5: Profile Setup */}
-            <Route path="/profile-setup" element={<ProfileSetupPage />} />
+            {/* Screen 5: Profile Setup (Strictly Protected) */}
+            <Route path="/profile-setup" element={<ProtectedRoute><ProfileSetupPage /></ProtectedRoute>} />
 
-            {/* Screen 1: Get Started & Root Entry */}
-            <Route path="/" element={<GetStartedPage />} />
-            <Route path="/get-started" element={<GetStartedPage />} />
-            <Route path="/dashboard" element={<Dashboard />} />
+            {/* Screen 6: Home Dashboard (Strictly Protected) */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
 
             {/* Screen 7: Resume Analyzer Results */}
-            <Route path="/resume-results" element={<ResumeAnalyzerResults />} />
+            <Route path="/resume-results" element={<ProtectedRoute><ResumeAnalyzerResults /></ProtectedRoute>} />
 
             {/* Screen 8: Job Description Analyzer */}
-            <Route path="/jd-analyzer" element={<JobDescriptionAnalyzer />} />
+            <Route path="/jd-analyzer" element={<ProtectedRoute><JobDescriptionAnalyzer /></ProtectedRoute>} />
 
             {/* Screen 9: Mock Interview Setup */}
-            <Route path="/interview-setup" element={<MockInterviewSetup />} />
+            <Route path="/interview-setup" element={<ProtectedRoute><MockInterviewSetup /></ProtectedRoute>} />
 
             {/* Screen 10: Voice Interview + Camera */}
-            <Route path="/voice-interview" element={<VoiceInterviewScreen />} />
-            <Route path="/interview" element={<VoiceInterviewScreen />} />
+            <Route path="/voice-interview" element={<ProtectedRoute><VoiceInterviewScreen /></ProtectedRoute>} />
+            <Route path="/interview" element={<ProtectedRoute><VoiceInterviewScreen /></ProtectedRoute>} />
 
             {/* Screen 11: Coding Interview */}
-            <Route path="/coding" element={<CodingArena />} />
+            <Route path="/coding" element={<ProtectedRoute><CodingArena /></ProtectedRoute>} />
 
             {/* Screen 12: Feedback Report */}
-            <Route path="/feedback-report" element={<FeedbackReportScreen />} />
+            <Route path="/feedback-report" element={<ProtectedRoute><FeedbackReportScreen /></ProtectedRoute>} />
 
             {/* Screen 13: Learning Plan */}
-            <Route path="/learning-plan" element={<LearningPlanScreen />} />
+            <Route path="/learning-plan" element={<ProtectedRoute><LearningPlanScreen /></ProtectedRoute>} />
 
             {/* Screen 14: Interview History */}
-            <Route path="/history" element={<InterviewHistoryScreen />} />
+            <Route path="/history" element={<ProtectedRoute><InterviewHistoryScreen /></ProtectedRoute>} />
 
             {/* Screen 15: Analytics Dashboard */}
-            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
 
             {/* Screen 16: AI Chat Assistant */}
-            <Route path="/mentor" element={<CareerMentor />} />
+            <Route path="/mentor" element={<ProtectedRoute><CareerMentor /></ProtectedRoute>} />
 
             {/* Screen 17: Career Advisor */}
-            <Route path="/career-advisor" element={<CareerAdvisorScreen />} />
+            <Route path="/career-advisor" element={<ProtectedRoute><CareerAdvisorScreen /></ProtectedRoute>} />
 
             {/* Screen 18: Company Database */}
-            <Route path="/companies" element={<CompanyDatabaseScreen />} />
+            <Route path="/companies" element={<ProtectedRoute><CompanyDatabaseScreen /></ProtectedRoute>} />
 
             {/* Screen 19: Gamification */}
-            <Route path="/gamification" element={<GamificationScreen />} />
+            <Route path="/gamification" element={<ProtectedRoute><GamificationScreen /></ProtectedRoute>} />
 
             {/* Screen 20: Notifications */}
-            <Route path="/notifications" element={<NotificationsScreen />} />
+            <Route path="/notifications" element={<ProtectedRoute><NotificationsScreen /></ProtectedRoute>} />
 
             {/* Screen 21: Admin Panel */}
-            <Route path="/admin" element={<AdminPanel />} />
+            <Route path="/admin" element={<ProtectedRoute><AdminPanel /></ProtectedRoute>} />
 
             {/* Screen 22: Candidate Profile & Settings */}
-            <Route path="/profile" element={<Profile />} />
+            <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

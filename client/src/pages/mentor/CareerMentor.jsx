@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Mic, Send, Sparkles, Bot, Trash2 } from 'lucide-react';
 import { api } from '../../services/api';
 import { AISettingsModal } from '../../components/AISettingsModal';
+import { saveMentorChatToFirestore } from '../../services/firebase';
 
 // ---------------------------------------------------------------------------
 // Lightweight inline Markdown renderer — no external deps needed
@@ -189,6 +190,13 @@ export const CareerMentor = () => {
       const res = await api.sendMentorMessage(text, activePersona, messages);
       const reply = res.assistantMessage?.content || res.reply || "I'm analyzing your request. Keep refining your approach!";
       setMessages((prev) => [...prev, { sender: 'ai', text: reply }]);
+
+      // Log conversation to Cloud Firestore
+      saveMentorChatToFirestore(null, {
+        personality: activePersona,
+        userMessage: text,
+        aiReply: reply
+      });
     } catch (err) {
       console.error('Error sending mentor message:', err);
       setMessages((prev) => [

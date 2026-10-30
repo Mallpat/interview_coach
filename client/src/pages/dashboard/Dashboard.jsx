@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Mic, Code, Sparkles, ArrowRight, TrendingUp, Code2, FileText } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, isInvalidName } from '../../context/AuthContext';
 import { 
   getActiveResumeAnalysis, 
   getStoredInterviewHistory, 
@@ -13,6 +13,23 @@ export const Dashboard = () => {
   const navigate = useNavigate();
   const { user, profile, candidateName: authCandidateName } = useAuth();
   const location = useLocation();
+
+  // Redirect immediately if not authenticated or profile incomplete
+  useEffect(() => {
+    if (!user) {
+      navigate('/get-started', { replace: true });
+      return;
+    }
+    const rawName = authCandidateName || profile?.fullName || localStorage.getItem('candidate_name');
+    const hasValidName = rawName && typeof rawName === 'string' && rawName.trim().length >= 2 && !isInvalidName(rawName);
+    const isCompleted = Boolean(
+      (profile?.profileCompleted || localStorage.getItem('candidate_profile_completed') === 'true') &&
+      hasValidName
+    );
+    if (!isCompleted) {
+      navigate('/profile-setup', { replace: true });
+    }
+  }, [user, authCandidateName, profile, navigate]);
 
   // Dynamic User Interview History State (Defaults to 0 for every new user!)
   const [interviewHistory, setInterviewHistory] = useState(() => getStoredInterviewHistory());
@@ -60,34 +77,38 @@ export const Dashboard = () => {
     ? Math.round(interviewHistory.reduce((sum, item) => sum + (Number(item.score) || 70), 0) / interviewCount)
     : 0;
 
-  const getCandidateFirstName = () => {
+  const getCandidateFullName = () => {
     try {
-      if (authCandidateName) {
-        return authCandidateName.trim().split(' ')[0];
+      if (authCandidateName && !isInvalidName(authCandidateName)) {
+        return authCandidateName.trim();
       }
-      const fromStorage = localStorage.getItem('candidate_name');
-      if (fromStorage) {
-        return fromStorage.trim().split(' ')[0];
-      }
-      const fromState = location.state?.fullName;
-      if (fromState) {
-        return fromState.trim().split(' ')[0];
-      }
-      const fromUser = user?.name;
-      if (fromUser) {
-        return fromUser.trim().split(' ')[0];
+      const fromUser = user?.name || user?.displayName;
+      if (fromUser && !isInvalidName(fromUser)) {
+        return fromUser.trim();
       }
       const fromProfile = profile?.fullName;
-      if (fromProfile) {
-        return fromProfile.trim().split(' ')[0];
+      if (fromProfile && !isInvalidName(fromProfile)) {
+        return fromProfile.trim();
+      }
+      const fromStorage = localStorage.getItem('candidate_name');
+      if (fromStorage && !isInvalidName(fromStorage)) {
+        return fromStorage.trim();
+      }
+      const fromState = location.state?.fullName;
+      if (fromState && !isInvalidName(fromState)) {
+        return fromState.trim();
+      }
+      if (user?.email) {
+        const emailPrefix = user.email.split('@')[0];
+        return emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
       }
     } catch (e) {}
-    return '';
+    return 'User';
   };
 
-  const candidateFirstName = getCandidateFirstName();
-  const candidateName = candidateFirstName || 'Candidate';
-  const avatarInitial = (candidateName.charAt(0) || 'C').toUpperCase();
+  const candidateFullName = getCandidateFullName();
+  const targetRole = profile?.targetRole || localStorage.getItem('candidate_role') || 'Full Stack Engineer';
+  const avatarInitial = (candidateFullName.charAt(0) || 'U').toUpperCase();
 
   return (
     <div style={{
@@ -105,7 +126,7 @@ export const Dashboard = () => {
       }}>
         <div>
           <span style={{ fontSize: '0.8rem', color: '#94A3B8', fontWeight: 500 }}>
-            Good morning
+            Welcome back
           </span>
           <h1 style={{
             fontSize: '1.5rem',
@@ -113,8 +134,27 @@ export const Dashboard = () => {
             color: '#FFFFFF',
             lineHeight: 1.2
           }}>
-            {candidateName}
+            {candidateFullName}
           </h1>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            marginTop: '4px'
+          }}>
+            <span style={{
+              fontSize: '0.72rem',
+              color: '#00F5A0',
+              background: 'rgba(0, 245, 160, 0.1)',
+              border: '1px solid rgba(0, 245, 160, 0.25)',
+              padding: '2px 8px',
+              borderRadius: '6px',
+              fontWeight: 600,
+              letterSpacing: '0.02em'
+            }}>
+              {targetRole}
+            </span>
+          </div>
         </div>
 
         {/* Avatar Circle */}
@@ -141,7 +181,7 @@ export const Dashboard = () => {
           {(user?.avatarUrl || localStorage.getItem('candidate_avatar')) ? (
             <img
               src={user?.avatarUrl || localStorage.getItem('candidate_avatar')}
-              alt={candidateName}
+              alt={candidateFullName}
               style={{ width: '100%', height: '100%', objectFit: 'cover' }}
             />
           ) : (

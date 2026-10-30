@@ -12,7 +12,7 @@ import {
   Zap,
   Key
 } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth, isInvalidName } from '../context/AuthContext';
 import { AISettingsModal } from '../components/AISettingsModal';
 
 export const Sidebar = () => {
@@ -204,8 +204,12 @@ export const Sidebar = () => {
 
       {/* User Footer */}
       {(() => {
-        const effectiveName = user?.name || candidateName || profile?.fullName || 'Candidate';
-        const avatarInitial = (effectiveName.charAt(0) || 'C').toUpperCase();
+        const rawName = user?.name || user?.displayName || candidateName || profile?.fullName;
+        const emailName = user?.email ? user.email.split('@')[0] : '';
+        const effectiveName = (rawName && !isInvalidName(rawName))
+          ? rawName
+          : (emailName ? (emailName.charAt(0).toUpperCase() + emailName.slice(1)) : 'User');
+        const avatarInitial = (effectiveName.charAt(0) || 'U').toUpperCase();
         const displayEmail = user?.email || localStorage.getItem('candidate_email') || '';
 
         return (

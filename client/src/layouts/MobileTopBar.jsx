@@ -1,4 +1,4 @@
-﻿import React from "react";
+import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
@@ -6,19 +6,34 @@ import { useAuth } from "../context/AuthContext";
 export const MobileTopBar = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { profile } = useAuth();
+  const { user, profile } = useAuth();
 
-  const isHome = location.pathname === "/" || location.pathname === "/dashboard";
-  const isGetStarted = location.pathname === "/get-started";
+  // Hide top bar on auth and onboarding screens when not logged in
+  const authRoutes = [
+    "/",
+    "/get-started",
+    "/signup",
+    "/login",
+    "/forgot-password",
+    "/verify-email"
+  ];
+
+  if (authRoutes.includes(location.pathname) && !user) {
+    return null;
+  }
+
+  const isHome = location.pathname === "/dashboard";
+  const isGetStarted = location.pathname === "/get-started" || location.pathname === "/";
 
   const getTitle = () => {
     switch (location.pathname) {
-      case "/":
       case "/dashboard": return "Dashboard";
+      case "/":
       case "/get-started": return "Welcome";
       case "/signup": return "Create Account";
       case "/login": return "Sign In";
       case "/forgot-password": return "Reset Password";
+      case "/verify-email": return "Verify Email";
       case "/profile-setup": return "Profile Setup";
       case "/resume-results": return "Resume Analysis";
       case "/jd-analyzer": return "JD Matcher";

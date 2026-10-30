@@ -20,7 +20,7 @@ import {
   CheckCircle2,
   AlertCircle
 } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, isInvalidName } from '../../context/AuthContext';
 import { AISettingsModal } from '../../components/AISettingsModal';
 import { 
   analyzeResumeForInterviews, 
@@ -56,27 +56,30 @@ export const Profile = () => {
 
   // Determine true candidate name from auth credentials or localStorage
   const getCandidateFullName = () => {
-    if (authCandidateName && authCandidateName.trim() && authCandidateName !== 'Candidate') {
+    if (authCandidateName && authCandidateName.trim() && !isInvalidName(authCandidateName)) {
       return authCandidateName.trim();
     }
+    const fromUser = user?.name || user?.displayName;
+    if (fromUser && fromUser.trim() && !isInvalidName(fromUser)) {
+      return fromUser.trim();
+    }
+    const fromProfile = profile?.fullName;
+    if (fromProfile && fromProfile.trim() && !isInvalidName(fromProfile)) {
+      return fromProfile.trim();
+    }
     const stored = localStorage.getItem('candidate_name');
-    if (stored && stored.trim() && stored !== 'Candidate') {
+    if (stored && stored.trim() && !isInvalidName(stored)) {
       return stored.trim();
     }
-    if (user?.name && user.name.trim() && user.name !== 'Candidate') {
-      return user.name.trim();
-    }
-    if (profile?.fullName && profile.fullName.trim() && profile.fullName !== 'Candidate') {
-      return profile.fullName.trim();
-    }
     if (user?.email) {
-      return user.email.split('@')[0];
+      const emailPrefix = user.email.split('@')[0];
+      return emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1);
     }
-    return 'Candidate';
+    return 'User';
   };
 
   const candidateName = getCandidateFullName();
-  const avatarInitial = (candidateName.charAt(0) || 'C').toUpperCase();
+  const avatarInitial = (candidateName.charAt(0) || 'U').toUpperCase();
 
   const role = profile?.targetRole || localStorage.getItem('candidate_role') || 'Full Stack Engineer';
   const candidateEmail = user?.email || profile?.email || localStorage.getItem('candidate_email') || 'Not entered yet';

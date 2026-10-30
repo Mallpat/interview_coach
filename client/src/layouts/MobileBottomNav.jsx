@@ -7,16 +7,25 @@ import {
   MessageSquare, 
   User 
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 export const MobileBottomNav = () => {
   const location = useLocation();
+  const { user } = useAuth();
+
+  // If not signed in, NEVER show bottom navigation bar to avoid bypassing login
+  if (!user) {
+    return null;
+  }
 
   // Hide bottom nav on full-focus screens
   const hideNavRoutes = [
+    '/',
     '/get-started', 
     '/signup', 
     '/login', 
     '/forgot-password', 
+    '/verify-email',
     '/profile-setup', 
     '/voice-interview'
   ];
@@ -26,7 +35,7 @@ export const MobileBottomNav = () => {
   }
 
   const tabs = [
-    { to: '/dashboard', label: 'Home', icon: Home, aliases: ['/'] },
+    { to: '/dashboard', label: 'Home', icon: Home, aliases: [] },
     { to: '/resume-results', label: 'Resume', icon: FileText, aliases: ['/jd-analyzer'] },
     { to: '/analytics', label: 'Analytics', icon: BarChart2, aliases: ['/history'] },
     { to: '/mentor', label: 'Mentor', icon: MessageSquare, aliases: [] },

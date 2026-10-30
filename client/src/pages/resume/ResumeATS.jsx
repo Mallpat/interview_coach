@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { api } from '../../services/api';
 import { analyzeResumeForInterviews, saveResumeAnalysis } from '../../services/resumeAnalysisService';
+import { saveResumeAnalysisToFirestore } from '../../services/firebase';
 
 const SAMPLE_RESUME = `ALEX CHEN
 Full Stack Engineer | San Francisco, CA | alex.chen@example.com | github.com/alexchen | linkedin.com/in/alexchen
@@ -74,28 +75,38 @@ export const ResumeATS = () => {
   const handleAnalyzeResume = async () => {
     if (!resumeText.trim()) return;
     setAnalyzing(true);
+    let finalTailored = null;
     try {
       const res = await api.analyzeResumeText(resumeText, targetRole);
       setAtsResult(res.analysis);
       
-      const tailored = analyzeResumeForInterviews(resumeText, 'ATS_Resume.pdf', targetRole);
-      saveResumeAnalysis(tailored);
+      finalTailored = analyzeResumeForInterviews(resumeText, 'ATS_Resume.pdf', targetRole);
+      saveResumeAnalysis(finalTailored);
     } catch (err) {
       console.warn('API notice, analyzing with local engine:', err.message);
-      const tailored = analyzeResumeForInterviews(resumeText, 'ATS_Resume.pdf', targetRole);
-      saveResumeAnalysis(tailored);
+      finalTailored = analyzeResumeForInterviews(resumeText, 'ATS_Resume.pdf', targetRole);
+      saveResumeAnalysis(finalTailored);
       setAtsResult({
-        score: tailored.atsScore || 75,
-        skillsIdentified: tailored.skills,
-        sectionBreakdown: { metricCount: tailored.metrics?.length || 4, ...(tailored.scoreBreakdown || {}) },
-        strengths: (tailored.findings?.Keywords?.filter(f => f.type === 'good').map(f => f.label) || []).length > 0
-          ? tailored.findings.Keywords.filter(f => f.type === 'good').map(f => f.label)
+        score: finalTailored.atsScore || 75,
+        skillsIdentified: finalTailored.skills,
+        sectionBreakdown: { metricCount: finalTailored.metrics?.length || 4, ...(finalTailored.scoreBreakdown || {}) },
+        strengths: (finalTailored.findings?.Keywords?.filter(f => f.type === 'good').map(f => f.label) || []).length > 0
+          ? finalTailored.findings.Keywords.filter(f => f.type === 'good').map(f => f.label)
           : ['Strong foundational project descriptions and domain metrics'],
-        improvements: (tailored.findings?.Keywords?.filter(f => f.type !== 'good').map(f => f.label) || []).length > 0
-          ? tailored.findings.Keywords.filter(f => f.type !== 'good').map(f => f.label)
+        improvements: (finalTailored.findings?.Keywords?.filter(f => f.type !== 'good').map(f => f.label) || []).length > 0
+          ? finalTailored.findings.Keywords.filter(f => f.type !== 'good').map(f => f.label)
           : ['Add more quantified percentage improvements to your impact bullets']
       });
     } finally {
+      if (finalTailored) {
+        saveResumeAnalysisToFirestore(null, {
+          fileName: 'ATS_Resume.pdf',
+          targetRole,
+          atsScore: finalTailored.atsScore || 75,
+          skills: finalTailored.skills || [],
+          missingKeywords: finalTailored.missingKeywords || []
+        });
+      }
       setAnalyzing(false);
     }
   };

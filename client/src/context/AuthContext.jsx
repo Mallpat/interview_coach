@@ -22,16 +22,19 @@ import { api } from '../services/api';
 
 const AuthContext = createContext(null);
 
-export const isInvalidOrAnanya = (name) => {
-  if (!name || typeof name !== 'string') return false;
-  return /ananya/i.test(name.trim());
+export const isInvalidName = (name) => {
+  if (!name || typeof name !== 'string') return true;
+  const clean = name.trim().toLowerCase();
+  return clean === '' || clean === 'candidate' || clean === 'ananya' || clean === 'demo' || clean === 'user' || clean === 'guest';
 };
+
+export const isInvalidOrAnanya = isInvalidName;
 
 export const getSavedCandidateName = () => {
   try {
     const saved = localStorage.getItem('candidate_name');
     if (saved && saved.trim()) {
-      if (/ananya/i.test(saved)) {
+      if (isInvalidName(saved)) {
         localStorage.removeItem('candidate_name');
         return '';
       }
@@ -53,7 +56,7 @@ export const AuthProvider = ({ children }) => {
   const [candidateName, setCandidateNameState] = useState(getSavedCandidateName);
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(DEFAULT_PROFILE);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState(null);
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState(false);
 
@@ -62,20 +65,25 @@ export const AuthProvider = ({ children }) => {
 
   const setCandidateName = (name) => {
     if (name === undefined || name === null) return;
-    setCandidateNameState(name);
+    const clean = isInvalidName(name) ? '' : name.trim();
+    setCandidateNameState(clean);
     try {
-      localStorage.setItem('candidate_name', name);
-      window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: name }));
+      if (clean) {
+        localStorage.setItem('candidate_name', clean);
+      } else {
+        localStorage.removeItem('candidate_name');
+      }
+      window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: clean }));
     } catch (e) {}
-    setProfile(prev => ({ ...prev, fullName: name }));
-    setUser(prev => prev ? { ...prev, name: name } : { name });
+    setProfile(prev => ({ ...prev, fullName: clean }));
+    setUser(prev => prev ? { ...prev, name: clean } : (clean ? { name: clean } : null));
   };
 
-  // Sync cross-component updates and keep candidate name updated
+  // Sync cross-component updates and clean legacy candidate/demo names
   useEffect(() => {
     try {
       const stored = localStorage.getItem('candidate_name');
-      if (stored && /ananya/i.test(stored)) {
+      if (stored && isInvalidName(stored)) {
         localStorage.removeItem('candidate_name');
         setCandidateNameState('');
       }
@@ -84,9 +92,10 @@ export const AuthProvider = ({ children }) => {
     const handleUpdate = (e) => {
       const newName = e?.detail || localStorage.getItem('candidate_name');
       if (newName !== undefined && newName !== null && newName !== candidateName) {
-        setCandidateNameState(newName);
-        setProfile(prev => ({ ...prev, fullName: newName }));
-        setUser(prev => prev ? { ...prev, name: newName } : { name: newName });
+        const clean = isInvalidName(newName) ? '' : newName.trim();
+        setCandidateNameState(clean);
+        setProfile(prev => ({ ...prev, fullName: clean }));
+        setUser(prev => prev ? { ...prev, name: clean } : (clean ? { name: clean } : null));
       }
     };
 
@@ -108,7 +117,13 @@ export const AuthProvider = ({ children }) => {
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       try {
         if (firebaseUser) {
-          const storedName = firebaseUser.displayName || localStorage.getItem('candidate_name') || firebaseUser.email?.split('@')[0] || 'Candidate';
+          const rawStored = localStorage.getItem('candidate_name');
+          const validStored = (rawStored && !isInvalidName(rawStored)) ? rawStored.trim() : '';
+          const emailName = firebaseUser.email ? firebaseUser.email.split('@')[0] : '';
+          const cleanEmailTitle = emailName ? (emailName.charAt(0).toUpperCase() + emailName.slice(1)) : '';
+          const storedName = (firebaseUser.displayName && !isInvalidName(firebaseUser.displayName))
+            ? firebaseUser.displayName.trim()
+            : (validStored || cleanEmailTitle || '');
           const storedEmail = firebaseUser.email || localStorage.getItem('candidate_email') || '';
           const storedRole = localStorage.getItem('candidate_role') || 'Full Stack Engineer';
           const storedResume = localStorage.getItem('candidate_resume') || '';
@@ -125,7 +140,11 @@ export const AuthProvider = ({ children }) => {
           };
           setUser(userData);
           setCandidateNameState(storedName);
-          localStorage.setItem('candidate_name', storedName);
+          if (storedName && !isInvalidName(storedName)) {
+            localStorage.setItem('candidate_name', storedName);
+          } else {
+            localStorage.removeItem('candidate_name');
+          }
           if (storedEmail) localStorage.setItem('candidate_email', storedEmail);
 
           // Get token and store for API authorization
@@ -140,14 +159,14 @@ export const AuthProvider = ({ children }) => {
           const firestoreDoc = await getUserFromFirestore(firebaseUser.uid);
           if (firestoreDoc?.profile) {
             setProfile(prev => ({ ...prev, ...firestoreDoc.profile }));
-            if (firestoreDoc.profile.fullName) {
+            if (firestoreDoc.profile.fullName && !isInvalidName(firestoreDoc.profile.fullName)) {
               setCandidateNameState(firestoreDoc.profile.fullName);
               localStorage.setItem('candidate_name', firestoreDoc.profile.fullName);
             }
             if (firestoreDoc.profile.targetRole) {
               localStorage.setItem('candidate_role', firestoreDoc.profile.targetRole);
             }
-          } else if (firestoreDoc?.fullName) {
+          } else if (firestoreDoc?.fullName && !isInvalidName(firestoreDoc.fullName)) {
             setProfile(prev => ({
               ...prev,
               fullName: firestoreDoc.fullName,
@@ -189,7 +208,13 @@ export const AuthProvider = ({ children }) => {
       // Record login in Firestore
       await recordUserLoginInFirestore(firebaseUser.uid, firebaseUser.email);
 
-      const resolvedName = firebaseUser.displayName || localStorage.getItem('candidate_name') || email.split('@')[0] || 'Candidate';
+      const rawStored = localStorage.getItem('candidate_name');
+      const validStored = (rawStored && !isInvalidName(rawStored)) ? rawStored.trim() : '';
+      const emailName = email ? email.split('@')[0] : '';
+      const cleanEmailTitle = emailName ? (emailName.charAt(0).toUpperCase() + emailName.slice(1)) : '';
+      const resolvedName = (firebaseUser.displayName && !isInvalidName(firebaseUser.displayName))
+        ? firebaseUser.displayName.trim()
+        : (validStored || cleanEmailTitle || '');
       const storedResume = localStorage.getItem('candidate_resume') || '';
       const storedRole = localStorage.getItem('candidate_role') || 'Full Stack Engineer';
 
@@ -205,21 +230,25 @@ export const AuthProvider = ({ children }) => {
       };
       setUser(userData);
       setCandidateNameState(resolvedName);
-      localStorage.setItem('candidate_name', resolvedName);
+      if (resolvedName && !isInvalidName(resolvedName)) {
+        localStorage.setItem('candidate_name', resolvedName);
+      } else {
+        localStorage.removeItem('candidate_name');
+      }
       if (firebaseUser.email) localStorage.setItem('candidate_email', firebaseUser.email);
 
       // Load Firestore profile if existing
       const firestoreDoc = await getUserFromFirestore(firebaseUser.uid);
       if (firestoreDoc?.profile) {
         setProfile(prev => ({ ...prev, ...firestoreDoc.profile }));
-        if (firestoreDoc.profile.fullName) {
+        if (firestoreDoc.profile.fullName && !isInvalidName(firestoreDoc.profile.fullName)) {
           setCandidateNameState(firestoreDoc.profile.fullName);
           localStorage.setItem('candidate_name', firestoreDoc.profile.fullName);
         }
         if (firestoreDoc.profile.targetRole) {
           localStorage.setItem('candidate_role', firestoreDoc.profile.targetRole);
         }
-      } else if (firestoreDoc?.fullName) {
+      } else if (firestoreDoc?.fullName && !isInvalidName(firestoreDoc.fullName)) {
         setProfile(prev => ({ ...prev, fullName: firestoreDoc.fullName, targetRole: firestoreDoc.targetRole || prev.targetRole }));
         setCandidateNameState(firestoreDoc.fullName);
         localStorage.setItem('candidate_name', firestoreDoc.fullName);
@@ -313,12 +342,20 @@ export const AuthProvider = ({ children }) => {
   const connectGoogleAccount = async ({ name, email, photoURL = null }) => {
     setLoading(true);
     try {
-      const trimmedName = (name || email?.split('@')[0] || 'Candidate').trim();
+      const emailName = email?.split('@')[0] || '';
+      const cleanEmailTitle = emailName ? (emailName.charAt(0).toUpperCase() + emailName.slice(1)) : '';
+      const trimmedName = (name && !isInvalidName(name))
+        ? name.trim()
+        : cleanEmailTitle;
       const trimmedEmail = (email || '').trim().toLowerCase();
 
       setCandidateName(trimmedName);
       try {
-        localStorage.setItem('candidate_name', trimmedName);
+        if (trimmedName && !isInvalidName(trimmedName)) {
+          localStorage.setItem('candidate_name', trimmedName);
+        } else {
+          localStorage.removeItem('candidate_name');
+        }
         if (trimmedEmail) localStorage.setItem('candidate_email', trimmedEmail);
         if (photoURL) {
           localStorage.setItem('candidate_avatar', photoURL);
@@ -369,7 +406,11 @@ export const AuthProvider = ({ children }) => {
           const userCredential = await signInWithPopup(auth, googleProvider);
           const firebaseUser = userCredential.user;
 
-          const googleName = firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Candidate';
+          const emailName = firebaseUser.email ? firebaseUser.email.split('@')[0] : '';
+          const cleanEmailTitle = emailName ? (emailName.charAt(0).toUpperCase() + emailName.slice(1)) : '';
+          const googleName = (firebaseUser.displayName && !isInvalidName(firebaseUser.displayName))
+            ? firebaseUser.displayName.trim()
+            : cleanEmailTitle;
           const googleEmail = firebaseUser.email;
           const googlePhoto = firebaseUser.photoURL || null;
 
@@ -469,6 +510,10 @@ export const AuthProvider = ({ children }) => {
       localStorage.removeItem('candidate_name');
       localStorage.removeItem('candidate_email');
       localStorage.removeItem('candidate_avatar');
+      localStorage.removeItem('candidate_role');
+      localStorage.removeItem('candidate_resume');
+      localStorage.removeItem('candidate_resume_text');
+      localStorage.removeItem('candidate_ats_score');
       setUser(null);
       setCandidateNameState('');
       setProfile(DEFAULT_PROFILE);

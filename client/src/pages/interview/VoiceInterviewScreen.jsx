@@ -17,6 +17,8 @@ import {
   Code2
 } from 'lucide-react';
 import { getActiveResumeAnalysis, recordInterviewSession } from '../../services/resumeAnalysisService';
+import { saveInterviewSessionToFirestore } from '../../services/firebase';
+import { InterviewReport } from './InterviewReport';
 
 const QUESTIONS_BY_ROLE = {
   Frontend: [
@@ -239,12 +241,70 @@ export const VoiceInterviewScreen = () => {
     window.speechSynthesis.speak(utterance);
   };
 
+  const [finalReport, setFinalReport] = useState(null);
+
   const handleNextQuestion = () => {
     if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     setIsSpeakingQuestion(false);
     setQuestionIndex(prev => (prev + 1) % questionsList.length);
     setLiveTranscript('');
     setInterimText('');
+  };
+
+  const handleFinish = async () => {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (e) {}
+    }
+
+    const words = (liveTranscript + ' ' + interimText).trim().split(/\s+/).filter(Boolean);
+    const wordCount = words.length;
+
+    const computedOverall = Math.min(96, Math.max(74, Math.round(
+      facialConfidence * 0.35 + 
+      eyeContactScore * 0.25 + 
+      (wordCount > 35 ? 92 : wordCount > 15 ? 85 : 76) * 0.4
+    )));
+
+    const report = {
+      overallScore: computedOverall,
+      technical: Math.min(96, Math.max(76, computedOverall + 2)),
+      communication: Math.min(95, Math.max(72, Math.round(smileScore * 0.4 + 48))),
+      nonVerbalScore: eyeContactScore,
+      confidence: facialConfidence,
+      strengths: [
+        'Maintained consistent forward eye contact and natural head posture.',
+        'Clear voice delivery with hardware noise suppression active.',
+        wordCount >= 25 ? 'Communicated core technical context clearly.' : 'Addressed the questions attentively.'
+      ],
+      weaknesses: [
+        wordCount < 30 ? 'Provide more comprehensive technical depth and concrete production metrics.' : null
+      ].filter(Boolean),
+      improvements: [
+        'Apply the STAR technique (Situation, Task, Action, Result) for structured storytelling.',
+        'Quantify architecture scale with specific throughput and latency percentiles.'
+      ],
+      starAnalysis: {
+        situation: 'Scenario scope and engineering context defined.',
+        task: 'Explained core objectives and key design trade-offs.',
+        action: 'Detailed technical implementation decisions and frameworks.',
+        result: 'Highlight measurable business and reliability results.'
+      }
+    };
+
+    setFinalReport(report);
+
+    // Sync to Cloud Firestore for Admin Tracking in Console
+    try {
+      saveInterviewSessionToFirestore(null, {
+        ...report,
+        role,
+        difficulty,
+        questionCount: questionsList.length
+      });
+    } catch (err) {
+      console.warn('Firestore session logging notice:', err);
+    }
   };
 
   // Format timer MM:SS
@@ -479,34 +539,18 @@ export const VoiceInterviewScreen = () => {
     };
   }, [useWebcam]);
 
-  const handleFinish = () => {
-    const rawScore = Math.round((facialConfidence + eyeContactScore + smileScore) / 3);
-    const sessionScore = Math.max(50, Math.min(96, rawScore || 80));
-    const now = new Date();
-    const dateFormatted = now.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    const formattedDuration = formatTime(seconds);
-
-    recordInterviewSession({
-      role: `${role || 'Technical'} • ${difficulty || 'Medium'}`,
-      date: dateFormatted,
-      score: sessionScore,
-      duration: formattedDuration,
-      facialConfidence,
-      expression: faceExpression,
-      type: 'voice'
-    });
-
-    navigate('/feedback-report', {
-      state: {
-        role,
-        difficulty,
-        score: sessionScore,
-        duration: formattedDuration,
-        facialConfidence,
-        expression: faceExpression
-      }
-    });
-  };
+  if (finalReport) {
+    return (
+      <InterviewReport
+        feedback={finalReport}
+        session={{ role, difficulty, type: 'Voice & Video Round' }}
+        onRestart={() => {
+          setFinalReport(null);
+          navigate('/dashboard');
+        }}
+      />
+    );
+  }
 
   return (
     <div style={{
@@ -520,7 +564,7 @@ export const VoiceInterviewScreen = () => {
       {/* Hidden canvas for video analysis */}
       <canvas ref={canvasRef} style={{ display: 'none' }} width="160" height="120" />
 
-      {/* Top Header: Close Button, Noise Cancellation Badge & Live Timer */}
+      {/* Top Header: Close Button, Noise Cancellation Badge, Dynamic Equalizer & Live Timer */}
       <div style={{
         display: 'flex',
         alignItems: 'center',
@@ -547,28 +591,41 @@ export const VoiceInterviewScreen = () => {
           <X size={18} />
         </button>
 
-        {/* AI Noise Cancellation Active Badge */}
+        {/* Dynamic Voice Waveform Equalizer */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '5px',
-          background: 'rgba(0, 245, 160, 0.09)',
+          gap: '3px',
+          background: 'rgba(0, 0, 0, 0.4)',
           border: '1px solid rgba(0, 245, 160, 0.25)',
           borderRadius: '9999px',
-          padding: '0.25rem 0.65rem',
-          fontSize: '0.72rem',
-          fontWeight: 700,
-          color: '#00F5A0'
+          padding: '0.25rem 0.65rem'
         }}>
-          <ShieldCheck size={13} color="#00F5A0" />
-          <span>Noise Cancellation Active</span>
-          <span style={{
-            width: '6px',
-            height: '6px',
-            borderRadius: '50%',
-            background: isSpeaking ? '#00F5A0' : '#10B981',
-            boxShadow: '0 0 6px #00F5A0'
-          }} />
+          <span style={{ fontSize: '0.68rem', fontWeight: 700, color: isSpeakingQuestion ? '#C084FC' : '#00F5A0', marginRight: '4px' }}>
+            {isSpeakingQuestion ? 'AI Speaking' : isSpeaking ? 'User Speaking' : 'Listening'}
+          </span>
+          {[10, 16, 22, 14, 18, 24, 12, 20].map((h, i) => {
+            const scale = (isSpeaking || isSpeakingQuestion) 
+              ? Math.max(0.25, (audioLevel / 100) * (0.5 + (i % 3) * 0.35)) 
+              : 0.18;
+            return (
+              <div
+                key={i}
+                style={{
+                  width: '3px',
+                  height: `${h}px`,
+                  borderRadius: '2px',
+                  background: isSpeakingQuestion 
+                    ? 'linear-gradient(180deg, #C084FC, #818CF8)' 
+                    : 'linear-gradient(180deg, #00F5A0, #00D4FF)',
+                  transform: `scaleY(${scale})`,
+                  transformOrigin: 'bottom',
+                  transition: 'transform 0.1s ease',
+                  boxShadow: (isSpeaking || isSpeakingQuestion) ? '0 0 6px rgba(0, 245, 160, 0.4)' : 'none'
+                }}
+              />
+            );
+          })}
         </div>
 
         {/* Live Timer */}

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { Sparkles, ArrowRight, AlertCircle } from 'lucide-react';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth, isInvalidName } from '../../context/AuthContext';
 
 export const LoginPage = () => {
   const navigate = useNavigate();
@@ -13,6 +13,19 @@ export const LoginPage = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const checkCompleted = (userObj) => {
+    try {
+      const storedCompleted = localStorage.getItem('candidate_profile_completed') === 'true';
+      const storedName = localStorage.getItem('candidate_name');
+      const candidateName = userObj?.name || userObj?.displayName || storedName;
+      const hasValidName = candidateName && typeof candidateName === 'string' && candidateName.trim().length >= 2 && !isInvalidName(candidateName);
+      const hasRole = Boolean(userObj?.targetRole || localStorage.getItem('candidate_role'));
+      return storedCompleted && hasValidName && hasRole;
+    } catch (e) {
+      return false;
+    }
+  };
 
   const getFirebaseErrorMessage = (err) => {
     const code = err?.code || '';
@@ -47,10 +60,20 @@ export const LoginPage = () => {
       try {
         localStorage.setItem('candidate_email', formData.email.trim());
       } catch (e) {}
+      let loggedUser = null;
       if (login) {
-        await login(formData.email.trim(), formData.password);
+        loggedUser = await login(formData.email.trim(), formData.password);
       }
-      navigate('/dashboard');
+      if (checkCompleted(loggedUser)) {
+        navigate('/dashboard');
+      } else {
+        navigate('/profile-setup', {
+          state: {
+            email: formData.email.trim(),
+            fullName: loggedUser?.name || localStorage.getItem('candidate_name') || ''
+          }
+        });
+      }
     } catch (err) {
       console.warn('Login attempt:', err);
       setError(getFirebaseErrorMessage(err));
@@ -66,7 +89,16 @@ export const LoginPage = () => {
       if (loginWithGoogle) {
         const res = await loginWithGoogle();
         if (res) {
-          navigate('/dashboard');
+          if (checkCompleted(res)) {
+            navigate('/dashboard');
+          } else {
+            navigate('/profile-setup', {
+              state: {
+                email: res.email || '',
+                fullName: res.name || localStorage.getItem('candidate_name') || ''
+              }
+            });
+          }
         }
       }
     } catch (err) {

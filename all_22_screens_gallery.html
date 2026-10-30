@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Interview Coach - All 22 Live Screens Gallery</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #03050A;
+      --bg-card: #080C14;
+      --bg-surface: #0D1322;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --border-highlight: rgba(0, 245, 160, 0.4);
+      --teal-primary: #00F5A0;
+      --teal-glow: rgba(0, 245, 160, 0.25);
+      --cyan-accent: #00D8F6;
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-dim: #64748B;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: var(--bg-main);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      padding: 2.5rem 1.5rem 5rem;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* Top Hero Banner */
+    .header-banner {
+      max-width: 1400px;
+      margin: 0 auto 3rem;
+      text-align: center;
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(0, 245, 160, 0.12);
+      border: 1px solid rgba(0, 245, 160, 0.35);
+      color: var(--teal-primary);
+      padding: 0.4rem 1rem;
+      border-radius: 9999px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      margin-bottom: 1.2rem;
+    }
+
+    .header-title {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      background: linear-gradient(135deg, #FFFFFF 30%, #00F5A0 80%, #00D8F6 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 0.85rem;
+    }
+
+    .header-subtitle {
+      color: var(--text-muted);
+      font-size: 1.1rem;
+      max-width: 720px;
+      margin: 0 auto 2rem;
+      line-height: 1.6;
+    }
+
+    /* Filter Tabs */
+    .tabs-bar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.6rem;
+      margin-bottom: 3rem;
+    }
+
+    .tab-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      padding: 0.6rem 1.25rem;
+      border-radius: 14px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .tab-btn:hover {
+      border-color: rgba(0, 245, 160, 0.35);
+      color: #FFF;
+      transform: translateY(-2px);
+    }
+
+    .tab-btn.active {
+      background: rgba(0, 245, 160, 0.14);
+      border-color: var(--teal-primary);
+      color: var(--teal-primary);
+      box-shadow: 0 0 20px var(--teal-glow);
+    }
+
+    /* Responsive Grid */
+    .screens-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 2.5rem 2rem;
+      max-width: 1480px;
+      margin: 0 auto;
+    }
+
+    /* Card */
+    .screen-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 28px;
+      padding: 1.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+      position: relative;
+    }
+
+    .screen-card:hover {
+      transform: translateY(-6px);
+      border-color: var(--border-highlight);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.7), 0 0 25px var(--teal-glow);
+    }
+
+    .card-meta {
+      width: 100%;
+      margin-bottom: 1.2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .screen-number {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--teal-primary);
+      background: rgba(0, 245, 160, 0.12);
+      border: 1px solid rgba(0, 245, 160, 0.25);
+      padding: 0.3rem 0.7rem;
+      border-radius: 10px;
+    }
+
+    .screen-route {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      background: rgba(255, 255, 255, 0.04);
+      padding: 0.25rem 0.6rem;
+      border-radius: 8px;
+    }
+
+    /* Mobile Frame Housing the Real Image */
+    .phone-frame {
+      width: 270px;
+      height: 560px;
+      background: #000;
+      border: 7px solid #141B2D;
+      border-radius: 40px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.08);
+      position: relative;
+      overflow: hidden;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.25s ease;
+    }
+
+    .phone-frame:hover {
+      transform: scale(1.02);
+    }
+
+    .phone-frame img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      object-position: top;
+      display: block;
+    }
+
+    /* Overlay Badge on Hover */
+    .hover-hint {
+      position: absolute;
+      bottom: 12px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(8px);
+      border: 1px solid rgba(0, 245, 160, 0.4);
+      color: #00F5A0;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.3rem 0.8rem;
+      border-radius: 9999px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .phone-frame:hover .hover-hint {
+      opacity: 1;
+    }
+
+    /* Card Details */
+    .card-info {
+      width: 100%;
+      margin-top: 1.25rem;
+      text-align: left;
+    }
+
+    .screen-name {
+      font-size: 1.1rem;
+      font-weight: 800;
+      color: #FFF;
+      margin-bottom: 0.35rem;
+    }
+
+    .screen-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Lightbox Modal */
+    .lightbox-modal {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(2, 4, 10, 0.92);
+      backdrop-filter: blur(12px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      padding: 1.5rem;
+    }
+
+    .lightbox-modal.active {
+      display: flex;
+    }
+
+    .lightbox-wrapper {
+      position: relative;
+      max-height: 90vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      animation: modalFadeIn 0.25s ease-out;
+    }
+
+    .lightbox-img {
+      max-height: 82vh;
+      width: auto;
+      border-radius: 28px;
+      border: 3px solid rgba(0, 245, 160, 0.4);
+      box-shadow: 0 25px 60px rgba(0, 0, 0, 0.9), 0 0 40px var(--teal-glow);
+    }
+
+    .lightbox-title {
+      color: #FFF;
+      font-size: 1.15rem;
+      font-weight: 700;
+      margin-top: 1rem;
+    }
+
+    .lightbox-close {
+      position: absolute;
+      top: -45px;
+      right: 0;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #FFF;
+      font-size: 1.4rem;
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+
+    .lightbox-close:hover {
+      background: rgba(239, 68, 68, 0.3);
+      border-color: #EF4444;
+      color: #EF4444;
+    }
+
+    @keyframes modalFadeIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Banner -->
+  <header class="header-banner">
+    <div class="badge-pill">✨ 100% Real Live Captures</div>
+    <h1 class="header-title">AI Interview Coach — All 22 Screens Showcase</h1>
+    <p class="header-subtitle">
+      Comprehensive visual gallery of every single screen in the platform. Each mobile device frame embeds the authentic high-resolution capture of the live running application. Click any screen to expand.
+    </p>
+
+    <!-- Filter Tabs -->
+    <div class="tabs-bar">
+      <button class="tab-btn active" onclick="filterScreens('all', this)">All 22 Screens</button>
+      <button class="tab-btn" onclick="filterScreens('auth', this)">Auth & Onboarding (1-6)</button>
+      <button class="tab-btn" onclick="filterScreens('practice', this)">Core Practice (7-12)</button>
+      <button class="tab-btn" onclick="filterScreens('analytics', this)">Analytics & Feedback (13-16)</button>
+      <button class="tab-btn" onclick="filterScreens('career', this)">Career & Extras (17-22)</button>
+    </div>
+  </header>
+
+  <!-- Screens Grid with Proper Embedded Images -->
+  <main class="screens-grid">
+
+    <!-- Screen 01 -->
+    <div class="screen-card" data-cat="auth">
+      <div class="card-meta">
+        <span class="screen-number">Screen 01</span>
+        <span class="screen-route">/get-started</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/01_get_started.png', 'Screen 01: Welcome / Get Started')">
+        <img src="screenshots/01_get_started.png" alt="Screen 01: Welcome / Get Started" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Welcome / Get Started</h3>
+        <p class="screen-desc">Platform landing hero highlighting AI voice drills, coding sandboxes, and authentication options.</p>
+      </div>
+    </div>
+
+    <!-- Screen 02 -->
+    <div class="screen-card" data-cat="auth">
+      <div class="card-meta">
+        <span class="screen-number">Screen 02</span>
+        <span class="screen-route">/signup</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/02_signup.png', 'Screen 02: Candidate Signup')">
+        <img src="screenshots/02_signup.png" alt="Screen 02: Candidate Signup" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Candidate Signup</h3>
+        <p class="screen-desc">Account registration form with Firebase Authentication and Google 1-click single sign-on.</p>
+      </div>
+    </div>
+
+    <!-- Screen 03 -->
+    <div class="screen-card" data-cat="auth">
+      <div class="card-meta">
+        <span class="screen-number">Screen 03</span>
+        <span class="screen-route">/login</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/03_login.png', 'Screen 03: Candidate Login')">
+        <img src="screenshots/03_login.png" alt="Screen 03: Candidate Login" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Candidate Login</h3>
+        <p class="screen-desc">Secure email and password sign-in portal with validation and password reset redirects.</p>
+      </div>
+    </div>
+
+    <!-- Screen 04 -->
+    <div class="screen-card" data-cat="auth">
+      <div class="card-meta">
+        <span class="screen-number">Screen 04</span>
+        <span class="screen-route">/forgot-password</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/04_forgot_password.png', 'Screen 04: Forgot Password')">
+        <img src="screenshots/04_forgot_password.png" alt="Screen 04: Forgot Password" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Password Recovery</h3>
+        <p class="screen-desc">Self-service password reset dispatching official Firebase recovery emails.</p>
+      </div>
+    </div>
+
+    <!-- Screen 05 -->
+    <div class="screen-card" data-cat="auth">
+      <div class="card-meta">
+        <span class="screen-number">Screen 05</span>
+        <span class="screen-route">/verify-email</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/05_verify_email.png', 'Screen 05: Email Verification')">
+        <img src="screenshots/05_verify_email.png" alt="Screen 05: Email Verification" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Email Verification</h3>
+        <p class="screen-desc">Live status polling interface confirming candidate email address verification in Firestore.</p>
+      </div>
+    </div>
+
+    <!-- Screen 06 -->
+    <div class="screen-card" data-cat="auth">
+      <div class="card-meta">
+        <span class="screen-number">Screen 06</span>
+        <span class="screen-route">/profile-setup</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/06_profile_setup.png', 'Screen 06: Profile Setup & Onboarding')">
+        <img src="screenshots/06_profile_setup.png" alt="Screen 06: Profile Setup & Onboarding" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Candidate Setup & Onboarding</h3>
+        <p class="screen-desc">Candidate calibration with role selection, engineering branch filters, and resume scanning.</p>
+      </div>
+    </div>
+
+    <!-- Screen 07 -->
+    <div class="screen-card" data-cat="practice">
+      <div class="card-meta">
+        <span class="screen-number">Screen 07</span>
+        <span class="screen-route">/dashboard</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/07_dashboard.png', 'Screen 07: Executive Home Dashboard')">
+        <img src="screenshots/07_dashboard.png" alt="Screen 07: Executive Home Dashboard" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Executive Home Dashboard</h3>
+        <p class="screen-desc">Main control center displaying interview readiness gauges, quick drills, and navigation.</p>
+      </div>
+    </div>
+
+    <!-- Screen 08 -->
+    <div class="screen-card" data-cat="practice">
+      <div class="card-meta">
+        <span class="screen-number">Screen 08</span>
+        <span class="screen-route">/resume-results</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/08_resume_results.png', 'Screen 08: Resume ATS Results')">
+        <img src="screenshots/08_resume_results.png" alt="Screen 08: Resume ATS Results" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Resume ATS Scorecard</h3>
+        <p class="screen-desc">ATS compatibility scoring breakdown with keyword matches, impact verbs, and formatting checks.</p>
+      </div>
+    </div>
+
+    <!-- Screen 09 -->
+    <div class="screen-card" data-cat="practice">
+      <div class="card-meta">
+        <span class="screen-number">Screen 09</span>
+        <span class="screen-route">/jd-analyzer</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/09_jd_analyzer.png', 'Screen 09: Job Description Matcher')">
+        <img src="screenshots/09_jd_analyzer.png" alt="Screen 09: Job Description Matcher" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">JD Semantic Matcher</h3>
+        <p class="screen-desc">Compares candidate resumes with job postings to compute overlap scores and missing keywords.</p>
+      </div>
+    </div>
+
+    <!-- Screen 10 -->
+    <div class="screen-card" data-cat="practice">
+      <div class="card-meta">
+        <span class="screen-number">Screen 10</span>
+        <span class="screen-route">/interview-setup</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/10_interview_setup.png', 'Screen 10: Mock Interview Setup')">
+        <img src="screenshots/10_interview_setup.png" alt="Screen 10: Mock Interview Setup" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Mock Interview Setup</h3>
+        <p class="screen-desc">Configures interview role, difficulty level, question count, and verifies microphone audio.</p>
+      </div>
+    </div>
+
+    <!-- Screen 11 -->
+    <div class="screen-card" data-cat="practice">
+      <div class="card-meta">
+        <span class="screen-number">Screen 11</span>
+        <span class="screen-route">/voice-interview</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/11_voice_interview.png', 'Screen 11: Real-Time Voice Interview')">
+        <img src="screenshots/11_voice_interview.png" alt="Screen 11: Real-Time Voice Interview" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Voice & Video AI Room</h3>
+        <p class="screen-desc">Live conversational interview room powered by Web Speech STT, Gemini AI, and TTS audio synthesis.</p>
+      </div>
+    </div>
+
+    <!-- Screen 12 -->
+    <div class="screen-card" data-cat="practice">
+      <div class="card-meta">
+        <span class="screen-number">Screen 12</span>
+        <span class="screen-route">/coding</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/12_coding_arena.png', 'Screen 12: Technical Coding Arena')">
+        <img src="screenshots/12_coding_arena.png" alt="Screen 12: Technical Coding Arena" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Technical Coding Arena</h3>
+        <p class="screen-desc">Monaco-style browser IDE with multi-language syntax support, test case execution, and AI hints.</p>
+      </div>
+    </div>
+
+    <!-- Screen 13 -->
+    <div class="screen-card" data-cat="analytics">
+      <div class="card-meta">
+        <span class="screen-number">Screen 13</span>
+        <span class="screen-route">/feedback-report</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/13_feedback_report.png', 'Screen 13: Feedback Scorecard')">
+        <img src="screenshots/13_feedback_report.png" alt="Screen 13: Feedback Scorecard" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Feedback & Evaluation Scorecard</h3>
+        <p class="screen-desc">Comprehensive post-interview rubric evaluating technical correctness, STAR delivery, and pacing.</p>
+      </div>
+    </div>
+
+    <!-- Screen 14 -->
+    <div class="screen-card" data-cat="analytics">
+      <div class="card-meta">
+        <span class="screen-number">Screen 14</span>
+        <span class="screen-route">/learning-plan</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/14_learning_plan.png', 'Screen 14: 4-Week Learning Plan')">
+        <img src="screenshots/14_learning_plan.png" alt="Screen 14: 4-Week Learning Plan" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Personalized Learning Plan</h3>
+        <p class="screen-desc">4-week automated milestone curriculum tailoring practice drills to diagnosed weaknesses.</p>
+      </div>
+    </div>
+
+    <!-- Screen 15 -->
+    <div class="screen-card" data-cat="analytics">
+      <div class="card-meta">
+        <span class="screen-number">Screen 15</span>
+        <span class="screen-route">/history</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/15_history.png', 'Screen 15: Interview History')">
+        <img src="screenshots/15_history.png" alt="Screen 15: Interview History" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Interview History</h3>
+        <p class="screen-desc">Audit log of all completed practice drills with dates, durations, and review scorecards.</p>
+      </div>
+    </div>
+
+    <!-- Screen 16 -->
+    <div class="screen-card" data-cat="analytics">
+      <div class="card-meta">
+        <span class="screen-number">Screen 16</span>
+        <span class="screen-route">/analytics</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/16_analytics.png', 'Screen 16: Performance Analytics')">
+        <img src="screenshots/16_analytics.png" alt="Screen 16: Performance Analytics" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Performance Analytics</h3>
+        <p class="screen-desc">Radar charts and 30-day velocity curves tracking algorithmic, system design, and communication skills.</p>
+      </div>
+    </div>
+
+    <!-- Screen 17 -->
+    <div class="screen-card" data-cat="career">
+      <div class="card-meta">
+        <span class="screen-number">Screen 17</span>
+        <span class="screen-route">/mentor</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/17_career_mentor.png', 'Screen 17: AI Career Mentor')">
+        <img src="screenshots/17_career_mentor.png" alt="Screen 17: AI Career Mentor" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">24/7 AI Career Mentor</h3>
+        <p class="screen-desc">Interactive conversational coach powered by Gemini for behavioral tips and career guidance.</p>
+      </div>
+    </div>
+
+    <!-- Screen 18 -->
+    <div class="screen-card" data-cat="career">
+      <div class="card-meta">
+        <span class="screen-number">Screen 18</span>
+        <span class="screen-route">/career-advisor</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/18_career_advisor.png', 'Screen 18: Career Roadmap Advisor')">
+        <img src="screenshots/18_career_advisor.png" alt="Screen 18: Career Roadmap Advisor" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Career Roadmap Advisor</h3>
+        <p class="screen-desc">Strategic timeline planning for engineering seniority promotions from junior to staff architect.</p>
+      </div>
+    </div>
+
+    <!-- Screen 19 -->
+    <div class="screen-card" data-cat="career">
+      <div class="card-meta">
+        <span class="screen-number">Screen 19</span>
+        <span class="screen-route">/companies</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/19_companies.png', 'Screen 19: Company Database')">
+        <img src="screenshots/19_companies.png" alt="Screen 19: Company Database" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Company Intel Database</h3>
+        <p class="screen-desc">Company-specific interview loop intelligence, round counts, and bar-raiser criteria.</p>
+      </div>
+    </div>
+
+    <!-- Screen 20 -->
+    <div class="screen-card" data-cat="career">
+      <div class="card-meta">
+        <span class="screen-number">Screen 20</span>
+        <span class="screen-route">/gamification</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/20_gamification.png', 'Screen 20: Gamification & Badges')">
+        <img src="screenshots/20_gamification.png" alt="Screen 20: Gamification & Badges" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Gamification & Badges</h3>
+        <p class="screen-desc">Motivation engine with daily practice streaks, level tiers, collectible achievements, and XP points.</p>
+      </div>
+    </div>
+
+    <!-- Screen 21 -->
+    <div class="screen-card" data-cat="career">
+      <div class="card-meta">
+        <span class="screen-number">Screen 21</span>
+        <span class="screen-route">/notifications</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/21_notifications.png', 'Screen 21: Notifications Center')">
+        <img src="screenshots/21_notifications.png" alt="Screen 21: Notifications Center" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Notifications Center</h3>
+        <p class="screen-desc">Alerts center tracking streak reminders, score updates, and newly added interview question sets.</p>
+      </div>
+    </div>
+
+    <!-- Screen 22 -->
+    <div class="screen-card" data-cat="career">
+      <div class="card-meta">
+        <span class="screen-number">Screen 22</span>
+        <span class="screen-route">/profile</span>
+      </div>
+      <div class="phone-frame" onclick="openLightbox('screenshots/22_profile_settings.png', 'Screen 22: Candidate Profile & Settings')">
+        <img src="screenshots/22_profile_settings.png" alt="Screen 22: Candidate Profile & Settings" loading="lazy">
+        <div class="hover-hint">🔍 Click to Expand</div>
+      </div>
+      <div class="card-info">
+        <h3 class="screen-name">Candidate Settings & Profile</h3>
+        <p class="screen-desc">User account details, active resume management, Gemini API key settings, and sign-out controls.</p>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Lightbox Modal -->
+  <div class="lightbox-modal" id="lightboxModal" onclick="closeLightbox(event)">
+    <div class="lightbox-wrapper">
+      <button class="lightbox-close" onclick="closeLightboxDirect()">&times;</button>
+      <img id="lightboxImg" class="lightbox-img" src="" alt="Expanded View">
+      <div id="lightboxTitle" class="lightbox-title"></div>
+    </div>
+  </div>
+
+  <script>
+    function filterScreens(cat, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+
+      const cards = document.querySelectorAll('.screen-card');
+      cards.forEach(card => {
+        if (cat === 'all' || card.getAttribute('data-cat') === cat) {
+          card.style.display = 'flex';
+        } else {
+          card.style.display = 'none';
+        }
+      });
+    }
+
+    function openLightbox(src, title) {
+      const modal = document.getElementById('lightboxModal');
+      const img = document.getElementById('lightboxImg');
+      const titleEl = document.getElementById('lightboxTitle');
+      img.src = src;
+      titleEl.textContent = title;
+      modal.classList.add('active');
+    }
+
+    function closeLightbox(e) {
+      if (e.target.id === 'lightboxModal') {
+        document.getElementById('lightboxModal').classList.remove('active');
+      }
+    }
+
+    function closeLightboxDirect() {
+      document.getElementById('lightboxModal').classList.remove('active');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closeLightboxDirect();
+    });
+  </script>
+
+</body>
+</html>

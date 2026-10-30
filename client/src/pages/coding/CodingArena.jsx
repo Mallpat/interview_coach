@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Play, 
@@ -22,6 +22,7 @@ import {
 
 import { ALL_CODING_CHALLENGES, getChallengeById } from '../../data/codingChallenges';
 import { getActiveResumeAnalysis, recordInterviewSession } from '../../services/resumeAnalysisService';
+import { saveCodingSubmissionToFirestore } from '../../services/firebase';
 import { api } from '../../services/api';
 
 // Safe in-browser deep comparison for objects, arrays, and floating-point outputs
@@ -79,6 +80,29 @@ export const CodingArena = () => {
   const [activeTab, setActiveTab] = useState('tests'); // 'tests' | 'description' | 'resume'
   const [executionError, setExecutionError] = useState(null);
   const [submissionReport, setSubmissionReport] = useState(null);
+  const textareaRef = useRef(null);
+
+  // Quick-insert symbol for mobile touch ergonomics
+  const insertSymbol = (sym) => {
+    const el = textareaRef.current;
+    if (!el) {
+      setCode(prev => prev + sym);
+      return;
+    }
+    const start = el.selectionStart || 0;
+    const end = el.selectionEnd || 0;
+    const newCode = code.substring(0, start) + sym + code.substring(end);
+    setCode(newCode);
+    setTimeout(() => {
+      el.focus();
+      const pos = start + sym.length;
+      el.setSelectionRange(pos, pos);
+    }, 10);
+  };
+
+  const insertTab = () => {
+    insertSymbol('  ');
+  };
 
   // Update starter code when user switches challenge
   useEffect(() => {
@@ -172,7 +196,7 @@ export const CodingArena = () => {
     }
   };
 
-  // Submit solution & get AI review
+  // Submit solution & get AI review & sync to Firestore for admin console
   const handleSubmitSolution = async () => {
     setIsSubmitting(true);
     // If tests haven't been run yet, run them first
@@ -186,7 +210,7 @@ export const CodingArena = () => {
     const passedRatio = testResults ? testResults.passed / testResults.total : 1;
     const computedScore = Math.round(75 + passedRatio * 23);
 
-    setSubmissionReport({
+    const report = {
       problemTitle: activeChallenge.title,
       branch: activeChallenge.branch,
       score: computedScore,
@@ -195,7 +219,24 @@ export const CodingArena = () => {
         ? 'Excellent solution! Your implementation adheres to optimal time complexity and cleanly handles edge conditions.'
         : 'Good effort. Review edge cases and memory utilization to achieve full test coverage.',
       resumeAligned: Boolean(activeResumeAnalysis)
-    });
+    };
+
+    setSubmissionReport(report);
+
+    // Sync to Cloud Firestore for Admin Tracking
+    try {
+      saveCodingSubmissionToFirestore(null, {
+        challengeId: activeChallenge.id,
+        challengeTitle: activeChallenge.title,
+        branch: activeChallenge.branch,
+        language: 'javascript',
+        score: computedScore,
+        testsPassed: report.testsPassed,
+        code
+      });
+    } catch (fsErr) {
+      console.warn('Firestore coding log notice:', fsErr);
+    }
   };
 
   return (
@@ -401,7 +442,59 @@ export const CodingArena = () => {
           <span style={{ color: '#00F5A0', fontWeight: 600 }}>JavaScript (ES6+)</span>
         </div>
 
+        {/* Mobile Ergonomic Symbol Quick-Bar */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '5px',
+          overflowX: 'auto',
+          padding: '0.25rem 0.15rem 0.5rem',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
+          marginBottom: '0.5rem',
+          scrollbarWidth: 'none'
+        }}>
+          {['{', '}', '(', ')', '[', ']', ';', '=', '=>', ':', '+', '-', '*', '/', '&&', '||', '<', '>', "'", '"', '//'].map((sym) => (
+            <button
+              key={sym}
+              type="button"
+              onClick={() => insertSymbol(sym)}
+              style={{
+                background: 'rgba(255, 255, 255, 0.06)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '6px',
+                color: '#00F5A0',
+                fontFamily: "'JetBrains Mono', monospace",
+                fontSize: '0.78rem',
+                fontWeight: 700,
+                padding: '0.2rem 0.5rem',
+                cursor: 'pointer',
+                flexShrink: 0
+              }}
+            >
+              {sym}
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={insertTab}
+            style={{
+              background: 'rgba(0, 245, 160, 0.12)',
+              border: '1px solid rgba(0, 245, 160, 0.3)',
+              borderRadius: '6px',
+              color: '#00F5A0',
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              padding: '0.2rem 0.5rem',
+              cursor: 'pointer',
+              flexShrink: 0
+            }}
+          >
+            Tab ⇥
+          </button>
+        </div>
+
         <textarea
+          ref={textareaRef}
           rows={10}
           value={code}
           onChange={(e) => setCode(e.target.value)}

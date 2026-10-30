@@ -222,10 +222,18 @@ export const SignupPage = () => {
         <div>
           <input
             type="text"
+            id="signup-fullName"
+            name="fullName"
+            autoComplete="name"
+            autoCapitalize="words"
+            spellCheck="false"
             className="dark-input"
             placeholder="Full name *"
             value={formData.fullName}
-            onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFormData(prev => ({ ...prev, fullName: val }));
+            }}
             required
           />
         </div>
@@ -233,10 +241,16 @@ export const SignupPage = () => {
         <div>
           <input
             type="email"
+            id="signup-email"
+            name="email"
+            autoComplete="email"
             className="dark-input"
             placeholder="Email address *"
             value={formData.email}
-            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFormData(prev => ({ ...prev, email: val }));
+            }}
             required
           />
         </div>
@@ -244,10 +258,16 @@ export const SignupPage = () => {
         <div>
           <input
             type="password"
+            id="signup-password"
+            name="password"
+            autoComplete="new-password"
             className="dark-input"
             placeholder="Password (min. 6 characters) *"
             value={formData.password}
-            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+            onChange={(e) => {
+              const val = e.target.value;
+              setFormData(prev => ({ ...prev, password: val }));
+            }}
             required
           />
         </div>

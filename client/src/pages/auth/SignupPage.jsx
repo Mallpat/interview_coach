@@ -128,8 +128,8 @@ export const SignupPage = () => {
       display: 'flex',
       flexDirection: 'column',
       minHeight: '100%',
-      justifyContent: 'center',
-      padding: '1.5rem 1.25rem',
+      justifyContent: 'flex-start',
+      padding: '1.25rem 1.25rem 2.5rem',
       maxWidth: '380px',
       margin: '0 auto'
     }}>
@@ -234,6 +234,12 @@ export const SignupPage = () => {
               const val = e.target.value;
               setFormData(prev => ({ ...prev, fullName: val }));
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('signup-email')?.focus();
+              }
+            }}
             required
           />
         </div>
@@ -250,6 +256,12 @@ export const SignupPage = () => {
             onChange={(e) => {
               const val = e.target.value;
               setFormData(prev => ({ ...prev, email: val }));
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('signup-password')?.focus();
+              }
             }}
             required
           />
@@ -339,7 +351,7 @@ export const SignupPage = () => {
       </form>
 
       {/* Already have an account? Log In */}
-      <div style={{ textAlign: 'center', marginTop: '1.75rem' }}>
+      <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
         <p style={{ fontSize: '0.85rem', color: '#94A3B8' }}>
           Already have an account?{' '}
           <Link
@@ -353,6 +365,11 @@ export const SignupPage = () => {
             Log In
           </Link>
         </p>
+      </div>
+
+      {/* Version Verification Indicator */}
+      <div style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.72rem', color: '#64748B' }}>
+        v1.0.2 • Verified Stable
       </div>
     </div>
   );

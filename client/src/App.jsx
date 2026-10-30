@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth, isInvalidName } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { MobileTopBar } from './layouts/MobileTopBar';
 import { MobileBottomNav } from './layouts/MobileBottomNav';
 
@@ -274,10 +275,12 @@ const MobileAppShell = () => {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <MobileAppShell />
-      </BrowserRouter>
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <BrowserRouter>
+          <MobileAppShell />
+        </BrowserRouter>
+      </AuthProvider>
+    </ErrorBoundary>
   );
 }

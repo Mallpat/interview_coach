@@ -55,19 +55,6 @@ export const SignupPage = () => {
       return;
     }
 
-    // Immediately persist entered name and dispatch live update
-    if (setCandidateName) setCandidateName(candidateNameEntered);
-    try {
-      localStorage.setItem('candidate_name', candidateNameEntered);
-      if (formData.email) localStorage.setItem('candidate_email', formData.email.trim());
-      if (resumeFile?.name) {
-        localStorage.setItem('candidate_resume', resumeFile.name);
-      } else {
-        localStorage.removeItem('candidate_resume');
-      }
-      window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: candidateNameEntered }));
-    } catch (err) {}
-
     setLoading(true);
     try {
       if (register && formData.email && formData.password) {
@@ -82,6 +69,20 @@ export const SignupPage = () => {
         setLoading(false);
         return;
       }
+
+      // Persist entered name and dispatch live update after successful registration
+      if (setCandidateName) setCandidateName(candidateNameEntered);
+      try {
+        localStorage.setItem('candidate_name', candidateNameEntered);
+        if (formData.email) localStorage.setItem('candidate_email', formData.email.trim());
+        if (resumeFile?.name) {
+          localStorage.setItem('candidate_resume', resumeFile.name);
+        } else {
+          localStorage.removeItem('candidate_resume');
+        }
+        window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: candidateNameEntered }));
+      } catch (err) {}
+
       // Only navigate if Firebase registration succeeded
       navigate('/profile-setup', {
         state: { 
@@ -224,15 +225,7 @@ export const SignupPage = () => {
             className="dark-input"
             placeholder="Full name *"
             value={formData.fullName}
-            onChange={(e) => {
-              const val = e.target.value;
-              setFormData(prev => ({ ...prev, fullName: val }));
-              if (setCandidateName) setCandidateName(val);
-              try {
-                localStorage.setItem('candidate_name', val);
-                window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: val }));
-              } catch (err) {}
-            }}
+            onChange={(e) => setFormData(prev => ({ ...prev, fullName: e.target.value }))}
             required
           />
         </div>

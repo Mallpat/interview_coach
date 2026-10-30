@@ -76,7 +76,7 @@ export const AuthProvider = ({ children }) => {
       window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: clean }));
     } catch (e) {}
     setProfile(prev => ({ ...prev, fullName: clean }));
-    setUser(prev => prev ? { ...prev, name: clean } : (clean ? { name: clean } : null));
+    setUser(prev => prev ? { ...prev, name: clean } : null);
   };
 
   // Sync cross-component updates and clean legacy candidate/demo names
@@ -95,7 +95,7 @@ export const AuthProvider = ({ children }) => {
         const clean = isInvalidName(newName) ? '' : newName.trim();
         setCandidateNameState(clean);
         setProfile(prev => ({ ...prev, fullName: clean }));
-        setUser(prev => prev ? { ...prev, name: clean } : (clean ? { name: clean } : null));
+        setUser(prev => prev ? { ...prev, name: clean } : null);
       }
     };
 
@@ -529,7 +529,7 @@ export const AuthProvider = ({ children }) => {
         localStorage.setItem('candidate_name', newProfile.fullName);
       } catch (e) {}
       setCandidateNameState(newProfile.fullName);
-      setUser(prev => prev ? { ...prev, name: newProfile.fullName } : { name: newProfile.fullName });
+      setUser(prev => prev ? { ...prev, name: newProfile.fullName } : prev);
     }
     if (newProfile.targetRole) {
       try {

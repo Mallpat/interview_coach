@@ -27,7 +27,7 @@ export const useSpeechSynthesis = () => {
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       try {
         window.speechSynthesis.cancel();
-      } catch (e) {}
+      } catch (e) { }
     }
 
     // 3. Stop audio fallback if playing
@@ -35,7 +35,7 @@ export const useSpeechSynthesis = () => {
       try {
         audioFallbackRef.current.pause();
         audioFallbackRef.current.currentTime = 0;
-      } catch (e) {}
+      } catch (e) { }
       audioFallbackRef.current = null;
     }
 
@@ -120,7 +120,7 @@ export const useSpeechSynthesis = () => {
         activeUtteranceRef.current = utterance; // Prevent garbage collection mid-speech
 
         const availableVoices = window.speechSynthesis.getVoices() || [];
-        const preferred = availableVoices.find(v => 
+        const preferred = availableVoices.find(v =>
           (v.name.includes('Google') && v.lang.startsWith('en')) ||
           (v.name.includes('Natural') && v.lang.startsWith('en')) ||
           (v.lang === 'en-US' && !v.name.includes('Desktop'))

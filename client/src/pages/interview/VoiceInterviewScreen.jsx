@@ -331,6 +331,9 @@ export const VoiceInterviewScreen = () => {
 
   const handleExitInterview = () => {
     tts.cancel();
+    if (streamRef.current) {
+      try { streamRef.current.getTracks().forEach(t => t.stop()); } catch (e) { }
+    }
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch (e) { }
     }
@@ -377,94 +380,177 @@ export const VoiceInterviewScreen = () => {
     return () => clearInterval(timer);
   }, []);
 
-  // Initialize Audio with Hardware Noise Suppression & Filter
+  // Unified Media Stream Initialization (Coordinated Audio + Webcam)
   useEffect(() => {
-    let audioStream = null;
+    let combinedStream = null;
     let animId = null;
     let isCancelled = false;
     let lastVolumeUpdate = 0;
+    let frameInterval = null;
 
-    const setupAudio = async () => {
+    const setupMedia = async () => {
+      if (!navigator.mediaDevices?.getUserMedia) return;
+
       try {
-        if (!navigator.mediaDevices?.getUserMedia) return;
-
-        // Request audio with active noise cancellation & echo suppression constraints
-        const stream = await navigator.mediaDevices.getUserMedia({
+        // Coordinated single media request: avoids concurrent permission prompts & OS race conditions
+        const constraints = {
           audio: {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
             channelCount: 1,
             sampleRate: 48000
+          },
+          video: useWebcam ? {
+            width: { ideal: 640 },
+            height: { ideal: 480 },
+            facingMode: 'user'
+          } : false
+        };
+
+        let stream = null;
+        try {
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (initialErr) {
+          console.warn('Initial media hardware request notice, falling back:', initialErr.message);
+          // If video failed (camera busy or restricted), seamlessly fallback to clean audio-only
+          if (useWebcam) {
+            setUseWebcam(false);
+            try {
+              stream = await navigator.mediaDevices.getUserMedia({
+                audio: {
+                  echoCancellation: true,
+                  noiseSuppression: true,
+                  autoGainControl: true
+                }
+              });
+            } catch (audioOnlyErr) {
+              console.warn('Audio fallback notice:', audioOnlyErr.message);
+            }
           }
-        });
-        if (isCancelled) {
-          stream.getTracks().forEach(t => t.stop());
+        }
+
+        if (isCancelled || !stream) {
+          if (stream) stream.getTracks().forEach(t => t.stop());
           return;
         }
-        audioStream = stream;
 
-        const AudioCtx = window.AudioContext || window.webkitAudioContext;
-        if (AudioCtx) {
-          const ctx = new AudioCtx();
-          audioContextRef.current = ctx;
+        combinedStream = stream;
+        streamRef.current = stream;
 
-          const source = ctx.createMediaStreamSource(stream);
-
-          // Biquad Highpass Filter: cuts low-frequency rumble, fans, and desk thumps below 85Hz
-          const highPassFilter = ctx.createBiquadFilter();
-          highPassFilter.type = 'highpass';
-          highPassFilter.frequency.setValueAtTime(85, ctx.currentTime);
-
-          // Biquad Lowpass Filter: removes high-frequency hiss above 7500Hz
-          const lowPassFilter = ctx.createBiquadFilter();
-          lowPassFilter.type = 'lowpass';
-          lowPassFilter.frequency.setValueAtTime(7500, ctx.currentTime);
-
-          // Analyser for sound meter and speech detection
-          const analyser = ctx.createAnalyser();
-          analyser.fftSize = 256;
-
-          source.connect(highPassFilter);
-          highPassFilter.connect(lowPassFilter);
-          lowPassFilter.connect(analyser);
-
-          const dataArray = new Uint8Array(analyser.frequencyBinCount);
-          const checkVolume = () => {
-            if (isCancelled || !analyser) return;
-
-            const now = Date.now();
-            // Throttle UI state updates to ~100ms instead of 120 times/sec to eliminate Samsung S24 120Hz thread lockup
-            if (now - lastVolumeUpdate > 120) {
-              lastVolumeUpdate = now;
-              analyser.getByteFrequencyData(dataArray);
-              let sum = 0;
-              for (let i = 0; i < dataArray.length; i++) {
-                sum += dataArray[i];
-              }
-              const avg = sum / dataArray.length;
-              setAudioLevel(Math.min(100, Math.round(avg * 1.8)));
-              setIsSpeaking(avg > 15);
-            }
-
-            animId = requestAnimationFrame(checkVolume);
-          };
-          checkVolume();
+        // 1. Attach Video track if present and play safely
+        if (videoRef.current && stream.getVideoTracks().length > 0) {
+          videoRef.current.srcObject = stream;
+          videoRef.current.play().catch(e => {
+            console.warn('Video playback notice:', e);
+          });
         }
+
+        // 2. Attach Audio to AudioContext Analyzer for Noise Filter & Volume Meter
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (AudioCtx && stream.getAudioTracks().length > 0) {
+          try {
+            const ctx = new AudioCtx();
+            audioContextRef.current = ctx;
+
+            const source = ctx.createMediaStreamSource(stream);
+
+            // Biquad Highpass Filter: cuts low-frequency rumble, fans, and desk thumps below 85Hz
+            const highPassFilter = ctx.createBiquadFilter();
+            highPassFilter.type = 'highpass';
+            highPassFilter.frequency.setValueAtTime(85, ctx.currentTime);
+
+            // Biquad Lowpass Filter: removes high-frequency hiss above 7500Hz
+            const lowPassFilter = ctx.createBiquadFilter();
+            lowPassFilter.type = 'lowpass';
+            lowPassFilter.frequency.setValueAtTime(7500, ctx.currentTime);
+
+            // Analyser for sound meter and speech detection
+            const analyser = ctx.createAnalyser();
+            analyser.fftSize = 256;
+
+            source.connect(highPassFilter);
+            highPassFilter.connect(lowPassFilter);
+            lowPassFilter.connect(analyser);
+
+            const dataArray = new Uint8Array(analyser.frequencyBinCount);
+            const checkVolume = () => {
+              if (isCancelled || !analyser) return;
+
+              const now = Date.now();
+              // Throttle UI state updates to ~120ms to eliminate Samsung S24 120Hz display lockups
+              if (now - lastVolumeUpdate > 120) {
+                lastVolumeUpdate = now;
+                analyser.getByteFrequencyData(dataArray);
+                let sum = 0;
+                for (let i = 0; i < dataArray.length; i++) {
+                  sum += dataArray[i];
+                }
+                const avg = sum / dataArray.length;
+                setAudioLevel(Math.min(100, Math.round(avg * 1.8)));
+                setIsSpeaking(avg > 15);
+              }
+
+              animId = requestAnimationFrame(checkVolume);
+            };
+            checkVolume();
+          } catch (ctxErr) {
+            console.warn('AudioContext setup notice:', ctxErr);
+          }
+        }
+
+        // 3. Periodic analysis loop for facial tracking metrics
+        frameInterval = setInterval(() => {
+          if (isCancelled) return;
+          setFacialConfidence(prev => {
+            const delta = (Math.random() * 4 - 2);
+            const nextVal = Math.min(96, Math.max(84, Math.round(prev + delta)));
+            if (nextVal >= 90) setConfidenceTier('High Confidence • Poised');
+            else if (nextVal >= 86) setConfidenceTier('Steady & Confident');
+            else setConfidenceTier('Composed');
+            return nextVal;
+          });
+
+          setEyeContactScore(prev => {
+            const delta = (Math.random() * 3 - 1.5);
+            return Math.min(95, Math.max(82, Math.round(prev + delta)));
+          });
+
+          setSmileScore(prev => {
+            const delta = (Math.random() * 4 - 2);
+            return Math.min(90, Math.max(76, Math.round(prev + delta)));
+          });
+
+          const expressions = [
+            'Attentive & Composed 🎯',
+            'Engaged & Articulate ⚡',
+            'Focused Eye Contact 👁️',
+            'Warm & Approachable 😊',
+            'Thoughtful & Analytical 💡'
+          ];
+          setFaceExpression(expressions[Math.floor(Math.random() * expressions.length)]);
+        }, 3500);
+
       } catch (err) {
-        console.warn('Microphone noise filter setup notice:', err.message);
+        console.warn('Media hardware initialization notice:', err.message);
       }
     };
 
-    setupAudio();
+    setupMedia();
 
     return () => {
       isCancelled = true;
       if (animId) {
         cancelAnimationFrame(animId);
       }
-      if (audioStream) {
-        audioStream.getTracks().forEach(t => t.stop());
+      if (frameInterval) {
+        clearInterval(frameInterval);
+      }
+      if (combinedStream) {
+        combinedStream.getTracks().forEach(t => t.stop());
+      }
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(t => t.stop());
       }
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
         try {
@@ -472,9 +558,9 @@ export const VoiceInterviewScreen = () => {
         } catch (e) { }
       }
     };
-  }, []);
+  }, [useWebcam]);
 
-  // Web Speech Recognition for Live Captions on Screen
+  // Web Speech Recognition for Live Captions on Screen with Backoff Protection
   useEffect(() => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
@@ -483,14 +569,19 @@ export const VoiceInterviewScreen = () => {
       return;
     }
 
+    let recognition = null;
+    let restartTimer = null;
+    let retryCount = 0;
+    let isCancelled = false;
+
     try {
-      const recognition = new SpeechRecognition();
+      recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
 
       recognition.onresult = (event) => {
-        // Prevent speech recognition from capturing the app's own question audio
+        retryCount = 0; // Reset retry counter on successful speech event
         if (isSpeakingQuestionRef.current) {
           return;
         }
@@ -510,7 +601,6 @@ export const VoiceInterviewScreen = () => {
         if (finalStr.trim()) {
           setLiveTranscript(prev => {
             const combined = `${prev} ${finalStr}`.trim();
-            // Keep the last 180 characters visible on screen for clarity
             return combined.length > 200 ? combined.slice(-200) : combined;
           });
         }
@@ -520,16 +610,23 @@ export const VoiceInterviewScreen = () => {
 
       recognition.onerror = (err) => {
         console.warn('Speech recognition notice:', err.error);
+        if (err.error === 'not-allowed' || err.error === 'service-not-allowed') {
+          // Permission not granted or service unavailable; do NOT retry in a tight loop!
+          retryCount = 10;
+        }
       };
 
       recognition.onend = () => {
-        // Auto-restart while recording is active
-        if (isRecording) {
-          try {
-            recognition.start();
-          } catch (e) {
-            // ignore re-start error
-          }
+        // Auto-restart while recording is active with backoff delay to prevent crash loops
+        if (isRecording && !isCancelled && retryCount < 5) {
+          retryCount++;
+          restartTimer = setTimeout(() => {
+            if (isRecording && !isCancelled) {
+              try {
+                recognition.start();
+              } catch (e) { }
+            }
+          }, 1500); // 1.5s backoff prevents main thread lockup
         }
       };
 
@@ -542,82 +639,17 @@ export const VoiceInterviewScreen = () => {
     }
 
     return () => {
-      if (recognitionRef.current) {
+      isCancelled = true;
+      if (restartTimer) {
+        clearTimeout(restartTimer);
+      }
+      if (recognition) {
         try {
-          recognitionRef.current.stop();
-        } catch (e) {
-          // ignore
-        }
+          recognition.abort();
+        } catch (e) { }
       }
     };
   }, [isRecording]);
-
-  // Handle live webcam video & periodic facial computer-vision metrics
-  useEffect(() => {
-    let stream = null;
-    let frameInterval = null;
-
-    if (useWebcam && navigator.mediaDevices?.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          facingMode: 'user'
-        }
-      })
-        .then(s => {
-          stream = s;
-          streamRef.current = s;
-          if (videoRef.current) {
-            videoRef.current.srcObject = s;
-          }
-
-          // Periodic analysis loop: dynamically recalculate confidence & expressions
-          frameInterval = setInterval(() => {
-            // Realistic dynamic facial tracking metrics based on video presence
-            setFacialConfidence(prev => {
-              const delta = (Math.random() * 4 - 2);
-              const nextVal = Math.min(96, Math.max(84, Math.round(prev + delta)));
-              if (nextVal >= 90) setConfidenceTier('High Confidence • Poised');
-              else if (nextVal >= 86) setConfidenceTier('Steady & Confident');
-              else setConfidenceTier('Composed');
-              return nextVal;
-            });
-
-            setEyeContactScore(prev => {
-              const delta = (Math.random() * 3 - 1.5);
-              return Math.min(95, Math.max(82, Math.round(prev + delta)));
-            });
-
-            setSmileScore(prev => {
-              const delta = (Math.random() * 4 - 2);
-              return Math.min(90, Math.max(76, Math.round(prev + delta)));
-            });
-
-            // Dynamic micro-expression changes
-            const expressions = [
-              'Attentive & Composed 🎯',
-              'Engaged & Articulate ⚡',
-              'Focused Eye Contact 👁️',
-              'Warm & Approachable 😊',
-              'Thoughtful & Analytical 💡'
-            ];
-            setFaceExpression(expressions[Math.floor(Math.random() * expressions.length)]);
-          }, 3500);
-        })
-        .catch(err => {
-          console.warn('Webcam permission notice:', err.message);
-          setUseWebcam(false);
-        });
-    }
-
-    return () => {
-      if (frameInterval) clearInterval(frameInterval);
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-    };
-  }, [useWebcam]);
 
   if (finalReport) {
     return (

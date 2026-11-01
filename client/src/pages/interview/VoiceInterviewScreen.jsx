@@ -13,11 +13,13 @@ import {
   Sparkles, 
   Activity,
   Volume2,
+  VolumeX,
   ChevronRight,
   Code2
 } from 'lucide-react';
 import { getActiveResumeAnalysis, recordInterviewSession } from '../../services/resumeAnalysisService';
 import { saveInterviewSessionToFirestore } from '../../services/firebase';
+import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
 import { InterviewReport } from './InterviewReport';
 
 const QUESTIONS_BY_ROLE = {
@@ -196,8 +198,11 @@ export const VoiceInterviewScreen = () => {
     };
   }, [role, candidateResume, activeResumeAnalysis]);
 
+  const tts = useSpeechSynthesis();
   const [questionIndex, setQuestionIndex] = useState(0);
-  const [isSpeakingQuestion, setIsSpeakingQuestion] = useState(false);
+  const isSpeakingQuestion = tts.isSpeaking;
+  const isSpeakingQuestionRef = useRef(false);
+  isSpeakingQuestionRef.current = isSpeakingQuestion;
   const currentQuestion = questionsList[questionIndex % questionsList.length];
 
   const [seconds, setSeconds] = useState(0); // Starts cleanly at 00:00
@@ -224,35 +229,26 @@ export const VoiceInterviewScreen = () => {
   const recognitionRef = useRef(null);
   const streamRef = useRef(null);
 
-  // Voice read aloud for question
+  // Voice read aloud for question (Cross-platform Capacitor native TTS + Web speech fallback)
   const speakCurrentQuestion = () => {
-    if (!('speechSynthesis' in window)) return;
-    window.speechSynthesis.cancel();
-    if (isSpeakingQuestion) {
-      setIsSpeakingQuestion(false);
-      return;
+    if (tts.isSpeaking) {
+      tts.cancel();
+    } else {
+      tts.speak(currentQuestion);
     }
-    const utterance = new SpeechSynthesisUtterance(currentQuestion);
-    utterance.rate = 0.96;
-    utterance.pitch = 1.0;
-    utterance.onend = () => setIsSpeakingQuestion(false);
-    utterance.onerror = () => setIsSpeakingQuestion(false);
-    setIsSpeakingQuestion(true);
-    window.speechSynthesis.speak(utterance);
   };
 
   const [finalReport, setFinalReport] = useState(null);
 
   const handleNextQuestion = () => {
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    setIsSpeakingQuestion(false);
+    tts.cancel();
     setQuestionIndex(prev => (prev + 1) % questionsList.length);
     setLiveTranscript('');
     setInterimText('');
   };
 
   const handleFinish = async () => {
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    tts.cancel();
     if (recognitionRef.current) {
       try { recognitionRef.current.stop(); } catch (e) {}
     }
@@ -415,6 +411,11 @@ export const VoiceInterviewScreen = () => {
       recognition.lang = 'en-US';
 
       recognition.onresult = (event) => {
+        // Prevent speech recognition from capturing the app's own question audio
+        if (isSpeakingQuestionRef.current) {
+          return;
+        }
+
         let finalStr = '';
         let interimStr = '';
 
@@ -762,7 +763,7 @@ export const VoiceInterviewScreen = () => {
               cursor: 'pointer'
             }}
           >
-            <Volume2 size={13} />
+            {isSpeakingQuestion ? <VolumeX size={13} /> : <Volume2 size={13} />}
             <span>{isSpeakingQuestion ? 'Speaking...' : 'Listen'}</span>
           </button>
 

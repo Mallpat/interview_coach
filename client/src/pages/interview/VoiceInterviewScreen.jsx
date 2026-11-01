@@ -202,7 +202,11 @@ export const VoiceInterviewScreen = () => {
   const [questionIndex, setQuestionIndex] = useState(0);
   const isSpeakingQuestion = tts.isSpeaking;
   const isSpeakingQuestionRef = useRef(false);
-  isSpeakingQuestionRef.current = isSpeakingQuestion;
+
+  useEffect(() => {
+    isSpeakingQuestionRef.current = isSpeakingQuestion;
+  }, [isSpeakingQuestion]);
+
   const currentQuestion = questionsList[questionIndex % questionsList.length];
 
   const [seconds, setSeconds] = useState(0); // Starts cleanly at 00:00

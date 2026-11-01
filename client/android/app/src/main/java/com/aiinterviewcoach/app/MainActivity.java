@@ -8,8 +8,12 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getBridge() != null && getBridge().getWebView() != null) {
-            getBridge().getWebView().setBackgroundColor(Color.parseColor("#080C14"));
+        try {
+            if (getBridge() != null && getBridge().getWebView() != null) {
+                getBridge().getWebView().setBackgroundColor(Color.parseColor("#080C14"));
+            }
+        } catch (Exception e) {
+            // Safe fallback: proceed with default background if WebView isn't ready
         }
     }
 }

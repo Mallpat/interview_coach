@@ -102,7 +102,10 @@ export const useSpeechSynthesis = () => {
         if (onEnd) onEnd();
         return;
       } catch (err) {
-        console.warn('Capacitor native TTS error, falling back to web/audio TTS:', err);
+        console.warn('Capacitor native TTS error, using safe audio fallback:', err);
+        // On native Android/iOS WebView, avoid window.speechSynthesis to prevent WebView renderer crashes
+        playAudioFallback(cleanText, onEnd);
+        return;
       }
     }
 

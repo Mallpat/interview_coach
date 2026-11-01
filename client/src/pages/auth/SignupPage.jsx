@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { FileUp, CheckCircle, ArrowRight, Sparkles, AlertCircle } from 'lucide-react';
-import { useAuth, getSavedCandidateName } from '../../context/AuthContext';
+import { AlertCircle } from 'lucide-react';
+import { useAuth } from '../../context/AuthContext';
 
 export const SignupPage = () => {
   const navigate = useNavigate();
@@ -12,17 +12,9 @@ export const SignupPage = () => {
     email: '',
     password: ''
   });
-  const [resumeFile, setResumeFile] = useState(null);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState('');
-
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      setResumeFile(file);
-    }
-  };
 
   const getFirebaseErrorMessage = (err) => {
     const code = err?.code || '';
@@ -61,8 +53,7 @@ export const SignupPage = () => {
         await register(
           formData.email.trim(),
           formData.password,
-          candidateNameEntered,
-          resumeFile
+          candidateNameEntered
         );
       } else if (!formData.email || !formData.password) {
         setError('Please enter your email and password.');
@@ -75,11 +66,7 @@ export const SignupPage = () => {
       try {
         localStorage.setItem('candidate_name', candidateNameEntered);
         if (formData.email) localStorage.setItem('candidate_email', formData.email.trim());
-        if (resumeFile?.name) {
-          localStorage.setItem('candidate_resume', resumeFile.name);
-        } else {
-          localStorage.removeItem('candidate_resume');
-        }
+        localStorage.removeItem('candidate_resume');
         window.dispatchEvent(new CustomEvent('candidate_name_updated', { detail: candidateNameEntered }));
       } catch (err) { }
 
@@ -87,8 +74,7 @@ export const SignupPage = () => {
       navigate('/profile-setup', {
         state: {
           fullName: candidateNameEntered,
-          email: formData.email.trim(),
-          resumeName: resumeFile?.name || null
+          email: formData.email.trim()
         }
       });
     } catch (err) {
@@ -284,55 +270,6 @@ export const SignupPage = () => {
           />
         </div>
 
-        {/* Upload Resume Card */}
-        <label style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '1rem',
-          padding: '0.85rem 1rem',
-          borderRadius: '14px',
-          background: resumeFile ? 'rgba(0, 245, 160, 0.08)' : '#0F1626',
-          border: `1.5px dashed ${resumeFile ? '#00F5A0' : 'rgba(255, 255, 255, 0.12)'}`,
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          marginTop: '0.2rem'
-        }}>
-          <input
-            type="file"
-            accept=".pdf,.doc,.docx,.txt"
-            onChange={handleFileChange}
-            style={{ display: 'none' }}
-          />
-          <div style={{
-            width: '38px',
-            height: '38px',
-            borderRadius: '10px',
-            background: resumeFile ? 'rgba(0, 245, 160, 0.18)' : 'rgba(255, 255, 255, 0.05)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: resumeFile ? '#00F5A0' : '#94A3B8'
-          }}>
-            {resumeFile ? <CheckCircle size={20} color="#00F5A0" /> : <FileUp size={20} />}
-          </div>
-
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{
-              fontSize: '0.85rem',
-              fontWeight: 700,
-              color: '#FFFFFF',
-              whiteSpace: 'nowrap',
-              overflow: 'hidden',
-              textOverflow: 'ellipsis'
-            }}>
-              {resumeFile ? resumeFile.name : 'Attach resume (optional)'}
-            </div>
-            <span style={{ fontSize: '0.72rem', color: resumeFile ? '#00F5A0' : '#64748B' }}>
-              {resumeFile ? 'Attached for AI analysis' : 'Upload PDF or DOCX'}
-            </span>
-          </div>
-        </label>
-
         {/* Create Account Button */}
         <button
           type="submit"
@@ -369,7 +306,7 @@ export const SignupPage = () => {
 
       {/* Version Verification Indicator */}
       <div style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.72rem', color: '#64748B' }}>
-        v1.0.5 • Verified Stable
+        v1.0.6 • Verified Stable
       </div>
     </div>
   );

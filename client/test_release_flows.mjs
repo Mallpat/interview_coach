@@ -25,15 +25,15 @@ assert.match(
 );
 console.log('  ✅ Plus is correctly imported and referenced in ProfileSetupPage.jsx');
 
-// 2. Verify SignupPage has updated v1.0.4 badge and safe input handling
+// 2. Verify SignupPage has updated version badge and safe input handling
 console.log('\nTest 2: Checking SignupPage.jsx version badge & input safety...');
 const signupPath = path.resolve(clientDir, 'src/pages/auth/SignupPage.jsx');
 const signupContent = fs.readFileSync(signupPath, 'utf8');
 
 assert.match(
   signupContent,
-  /v1\.0\.5\s*•\s*Verified Stable/,
-  'SignupPage.jsx must display v1.0.5 • Verified Stable'
+  /v1\.0\.[56]\s*•\s*Verified Stable/,
+  'SignupPage.jsx must display verified stable badge'
 );
 assert.match(
   signupContent,

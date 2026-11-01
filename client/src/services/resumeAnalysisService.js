@@ -578,7 +578,7 @@ export const getActiveResumeAnalysis = () => {
  */
 export const getStoredInterviewHistory = () => {
   try {
-    const raw = localStorage.getItem('candidate_interview_history');
+    const raw = localStorage.getItem('candidate_interview_history') || localStorage.getItem('interview_coach_history');
     if (raw) {
       const parsed = JSON.parse(raw);
       if (Array.isArray(parsed)) return parsed;

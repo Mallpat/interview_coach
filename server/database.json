@@ -112,6 +112,17 @@
       "startedAt": "2026-09-07T16:29:29.669Z",
       "endedAt": null,
       "totalQuestions": 3
+    },
+    {
+      "id": "session-1793535460352",
+      "userId": "user-demo-123",
+      "role": "Full Stack Engineer",
+      "difficulty": "Senior",
+      "type": "Technical & Behavioral",
+      "status": "in_progress",
+      "startedAt": "2026-11-01T12:17:40.352Z",
+      "endedAt": null,
+      "totalQuestions": 2
     }
   ],
   "interview_questions": [
@@ -141,6 +152,24 @@
       "orderNo": 1,
       "coachTip": "Focus on clear communication, structured reasoning (STAR method), and quantitative metrics.",
       "createdAt": "2026-09-07T16:29:29.671Z"
+    },
+    {
+      "id": "q-1793535468655-1",
+      "sessionId": "session-1793535460352",
+      "question": "Imagine you are designing a real-time collaborative document editor (similar to Google Docs or Notion) for an enterprise web application. How would you architect this system end-to-end? Walk me through your choices for client-side state management, real-time communication protocols, conflict resolution strategies (e.g., OT vs. CRDTs), and backend database scaling under high concurrent write loads.",
+      "category": "architecture",
+      "orderNo": 1,
+      "coachTip": "As a senior candidate, avoid just listing technologies. Highlight the trade-offs of your choices—for example, compare Operational Transformation (OT) vs. Conflict-free Replicated Data Types (CRDTs), explain how to handle client optimistic updates with eventual consistency, and detail how you would scale WebSocket connections horizontally using a message broker like Redis Pub/Sub.",
+      "createdAt": "2026-11-01T12:17:48.655Z"
+    },
+    {
+      "id": "q-1793535478658-2",
+      "sessionId": "session-1793535460352",
+      "question": "What security measures do you implement across the full stack against XSS, CSRF, and SQL Injection attacks?",
+      "category": "technical",
+      "orderNo": 2,
+      "coachTip": "Focus on clear communication, structured reasoning (STAR method), and quantitative metrics.",
+      "createdAt": "2026-11-01T12:17:58.658Z"
     }
   ],
   "answers": [
@@ -154,6 +183,17 @@
       "videoMetrics": "{\"eyeContactScore\":91,\"facePresent\":true,\"posture\":\"Optimal Alignment\"}",
       "evaluation": "{\"overallScore\":85,\"communication\":79,\"technical\":88,\"confidence\":91,\"nonVerbalScore\":91,\"strengths\":[\"Good depth of response and relevant technical articulation.\",\"Good structure and awareness of impact.\"],\"weaknesses\":[\"Could substantiate points with more measurable business outcomes.\"],\"improvements\":[\"Use the STAR method explicitly: Situation -> Task -> Action -> Quantifiable Result.\",\"Highlight trade-offs and alternative solutions to show architectural maturity.\"],\"starAnalysis\":{\"situation\":\"Contextual setting described.\",\"task\":\"Core engineering task identified.\",\"action\":\"Technical choices highlighted.\",\"result\":\"Could strengthen the quantified outcome.\"},\"idealAnswerSummary\":\"A top-tier response directly answers the core question, outlines architectural trade-offs, and validates the solution with real-world metrics (e.g. latency, throughput, error rates).\"}",
       "createdAt": "2026-09-07T16:28:38.649Z"
+    },
+    {
+      "id": "ans-1793535477343",
+      "questionId": "q-1793535468655-1",
+      "transcript": "In our payment processing system, we experienced high latency under 10k requests/sec. I profiled queries, implemented Redis caching with eviction policies, and tuned postgres connection pools. As a result, P99 latency dropped by 45% and error rates fell below 0.01%.",
+      "durationSeconds": 42,
+      "fillerWordCount": 1,
+      "audioMetrics": "{}",
+      "videoMetrics": "{\"eyeContactScore\":91,\"facePresent\":true,\"posture\":\"Optimal Alignment\"}",
+      "evaluation": "{\"overallScore\":32,\"communication\":45,\"technical\":18,\"confidence\":85,\"nonVerbalScore\":92,\"strengths\":[\"Delivered a well-structured response with clear, quantitative results (P99 latency down 45%, error rates <0.01%).\",\"Excellent non-verbal delivery with 91% eye contact, strong face stability, and minimal filler words.\"],\"weaknesses\":[\"Completely failed to address the asked question regarding real-time collaborative document editor architecture.\",\"Provided a canned response about payment system query performance instead of discussing conflict resolution (OT vs. CRDTs), WebSockets, or collaborative client state management.\"],\"improvements\":[\"Listen carefully to the specific system design requirements in the prompt before responding.\",\"Practice designing collaborative real-time systems, focusing on WebSocket connection management, operational transformation (OT) versus conflict-free replicated data types (CRDTs), and document state persistence.\"],\"starAnalysis\":{\"situation\":\"Described a high-latency issue in a payment processing system under 10k req/sec (completely off-topic for the prompt).\",\"task\":\"Implied task was to optimize database performance and latency for payment processing.\",\"action\":\"Profiled queries, implemented Redis caching with eviction policies, and tuned PostgreSQL connection pools.\",\"result\":\"P99 latency dropped by 45% and error rates fell below 0.01%.\"},\"idealAnswerSummary\":\"A top-tier answer should architect an end-to-end collaborative editor: 1) Client state using a local document model integrated with CRDTs (e.g., Yjs or Automerge) or OT. 2) Real-time layer using WebSockets with fallback to HTTP Long Polling, routed via a dynamic socket server cluster with Redis Pub/Sub for room state. 3) Conflict resolution choice: compare OT (requires centralized server authority like Google Docs) vs. CRDTs (decentralized/eventual consistency, preferred for modern rich-text apps like Notion/Figma). 4) Data persistence: append-only log of operations in Cassandra/DynamoDB with periodic snapshotting to S3/Postgres to efficiently handle high concurrent write loads.\"}",
+      "createdAt": "2026-11-01T12:17:57.344Z"
     }
   ],
   "feedback": [
@@ -477,6 +517,20 @@
       "runtimeMs": 5.15,
       "aiReview": "{\"timeComplexity\":\"O(n)\",\"spaceComplexity\":\"O(n)\",\"verdict\":\"Optimal\",\"review\":\"Clean implementation. Good variable naming and handles primary constraints smoothly.\",\"optimizationTip\":\"Ensure memory usage is minimized by avoiding redundant object allocations in loops.\"}",
       "submittedAt": "2026-10-13T04:05:25.782Z"
+    },
+    {
+      "id": "sub-1793535482644",
+      "userId": "user-demo-123",
+      "challengeId": "chal-two-sum",
+      "code": "function twoSum(nums, target) {\n        const map = new Map();\n        for (let i = 0; i < nums.length; i++) {\n          const complement = target - nums[i];\n          if (map.has(complement)) return [map.get(complement), i];\n          map.set(nums[i], i);\n        }\n        return [];\n      }",
+      "language": "javascript",
+      "status": "passed",
+      "score": 100,
+      "passedCount": 4,
+      "totalCount": 4,
+      "runtimeMs": 5.02,
+      "aiReview": "{\"timeComplexity\":\"O(n)\",\"spaceComplexity\":\"O(n)\",\"verdict\":\"Optimal\",\"review\":\"Clean implementation. Good variable naming and handles primary constraints smoothly.\",\"optimizationTip\":\"Ensure memory usage is minimized by avoiding redundant object allocations in loops.\"}",
+      "submittedAt": "2026-11-01T12:18:02.644Z"
     }
   ],
   "resumes": [
@@ -490,6 +544,17 @@
       "atsFeedback": "{\"strengths\":[],\"improvements\":[\"Incorporate more high-impact action verbs (e.g. \\\"Architected\\\", \\\"Spearheaded\\\", \\\"Optimized\\\") instead of passive phrasing like \\\"Responsible for\\\".\",\"Add measurable quantifiable metrics (e.g., \\\"reduced P99 latency by 35%\\\", \\\"scaled to 1.2M daily active users\\\").\",\"Critical ATS sections missing or not clearly labeled: Contact, Projects.\"]}",
       "createdAt": "2026-09-07T16:28:38.681Z",
       "updatedAt": "2026-09-07T16:28:38.681Z"
+    },
+    {
+      "id": "resume-1793535490921",
+      "userId": "user-demo-123",
+      "fileName": "Pasted_Resume.txt",
+      "extractedText": "ALEX CHEN\nSenior Full Stack Engineer | alex@example.com\nSummary: 5+ years experience building React and Node.js microservices.\nExperience: Architected distributed event pipelines boosting engagement by 35%. Optimized PostgreSQL query performance reducing latency by 45%. Deployed Docker containers via CI/CD.\nSkills: JavaScript, TypeScript, React, Node.js, Express, PostgreSQL, Redis, Docker, AWS.\nEducation: B.S. in Computer Science.",
+      "sectionsJson": "{\"sectionsDetected\":{\"contact\":false,\"summary\":true,\"experience\":true,\"skills\":true,\"education\":true,\"projects\":false},\"missingSections\":[\"Contact\",\"Projects\"],\"actionVerbsCount\":3,\"actionVerbsSample\":[\"architected\",\"deployed\",\"optimized\"],\"skillsFoundCount\":11,\"skillsList\":[\"javascript\",\"typescript\",\"react\",\"node.js\",\"express\",\"postgresql\",\"redis\",\"docker\",\"aws\",\"ci/cd\",\"microservices\"],\"metricCount\":0,\"metricSamples\":[]}",
+      "atsScore": 71,
+      "atsFeedback": "{\"strengths\":[\"Clear inclusion of quantified business impact metrics (e.g., 35% engagement boost, 45% latency reduction).\",\"Well-rounded modern technology stack spanning frontend (React, TS), backend (Node, Express), and database technologies (PostgreSQL, Redis).\",\"Solid foundation in DevOps fundamentals including Docker, AWS, and CI/CD pipelines.\"],\"improvements\":[\"Specify explicit cloud services (e.g., AWS ECS, S3, Lambda) and CI/CD tools (e.g., GitHub Actions, Jenkins) to pass strict ATS filters.\",\"Add explicit mention of automated testing methodologies and frameworks (e.g., Jest, Cypress, React Testing Library).\",\"Expand single-line bullet points into detailed STAR-formatted descriptions highlighting project scale, daily throughput, and architectural leadership.\",\"Incorporate more high-impact action verbs (e.g. \\\"Architected\\\", \\\"Spearheaded\\\", \\\"Optimized\\\") instead of passive phrasing like \\\"Responsible for\\\".\",\"Add measurable quantifiable metrics (e.g., \\\"reduced P99 latency by 35%\\\", \\\"scaled to 1.2M daily active users\\\").\"],\"executiveSummary\":\"Alex Chen is a strong Senior Full Stack Engineer with 5+ years of experience leveraging React, TypeScript, and Node.js microservices. The candidate demonstrates solid backend optimization and infrastructure skills supported by quantified impact metrics. Adding specific testing frameworks and cloud orchestration tool details will further elevate the profile for top-tier senior technical roles.\",\"bulletPointRewrites\":[{\"original\":\"Deployed Docker containers via CI/CD.\",\"optimized\":\"Automated containerized microservice deployments using Docker and GitHub Actions CI/CD pipelines, accelerating deployment frequency by 40% with zero downtime.\"},{\"original\":\"Architected distributed event pipelines boosting engagement by 35%.\",\"optimized\":\"Architected high-throughput, distributed event-driven pipelines using Node.js, Redis, and AWS, processing 1M+ daily events and boosting platform engagement by 35%.\"}]}",
+      "createdAt": "2026-11-01T12:18:10.922Z",
+      "updatedAt": "2026-11-01T12:18:10.922Z"
     }
   ],
   "job_matches": [],
@@ -537,6 +602,20 @@
       "role": "assistant",
       "content": "The **STAR framework** is the industry standard for answering behavioral interview questions. For a **Senior Full Stack Engineer**, the key to mastering STAR is spending **70% of your time on the Action** and backing up the **Result with concrete metrics**.\n\nHere is the breakdown, tailored for a senior technical candidate:\n\n---\n\n### Core Components Breakdown\n\n*   **S — Situation (10–15% of your answer)**\n    *   **Goal:** Set the scene quickly. What was the company, project, or technical environment?\n    *   **Senior Tip:** Mention the scope (users, system scale, or team size) to establish complexity immediately.\n    *   *Verbatim Phrase:* `\"At [Company], our core API was struggling under peak load during [Event]...\"`\n\n*   **T — Task (10–15% of your answer)**\n    *   **Goal:** Define *your* explicit responsibility. What was the core challenge or goal you needed to achieve?\n    *   **Senior Tip:** Distinguish between what the *team* needed to do vs. what *you* were accountable for.\n    *   *Verbatim Phrase:* `\"My specific objective was to redesign our caching layer and reduce PostgreSQL load without adding significant infrastructure overhead.\"`\n\n*   **A — Action (60–70% of your answer) — *THE MOST IMPORTANT PART***\n    *   **Goal:** Explain the technical execution, trade-offs, and leadership actions *you* took.\n    *   **Senior Tip:** Focus on *why* you chose specific technologies or patterns (e.g., Redis for session state, React query optimizations, Express middleware tuning). Highlight cross-functional communication or technical mentoring.\n    *   *Verbatim Phrase:* `\"I evaluated two options: DB read replicas vs. a Redis caching layer. I chose Redis because... I wrote the Node.js abstraction, mentored two junior engineers on cache invalidation strategies, and...\"`\n\n*   **R — Result (10–15% of your answer)**\n    *   **Goal:** Share the quantifiable impact and long-term outcome.\n    *   **Senior Tip:** Use hard numbers (latency, uptime, cost savings, PR review speed). Mention takeaways or what you’d do differently.\n    *   *Verbatim Phrase:* `\"As a result, p99 API latency dropped from 450ms to 80ms, DB CPU utilization dropped by 40%, and the architecture handled a 3x traffic spike without downtime.\"`\n\n---\n\n### Pro-Tip for Senior Engineers: The \"STAR-L\" Add-on\nAdd an **L (Learnings)** at the end. Showing self-reflection (e.g., *\"If I were to do it again, I would have set up distributed tracing earlier...\"*) instantly signals senior-level technical maturity.\n\n---\n\n### Ready to practice?\nPick one of these common senior behavioral themes, and draft a response using STAR:\n1. *A time you had to make a tough technical compromise to meet a deadline.*\n2. *A time you led a complex migration (e.g., DB schema, state management, API refactor).*\n3. *A time you resolved a conflict with a Product Manager over technical debt.*",
       "createdAt": "2026-10-13T04:06:29.764Z"
+    },
+    {
+      "id": "msg-1793535490934-user",
+      "conversationId": "mentor-conv-1788798518692",
+      "role": "user",
+      "content": "How should I negotiate equity vs base salary for a Senior Full Stack Engineer role?",
+      "createdAt": "2026-11-01T12:18:10.934Z"
+    },
+    {
+      "id": "msg-1793535493722-ai",
+      "conversationId": "mentor-conv-1788798518692",
+      "role": "assistant",
+      "content": "### Strategic Salary Negotiation Playbook\n\n1. **Never Give the First Number**: When asked for expectations, respond: *\"I'm focused on finding the right cultural and technical fit first. Once we agree I'm the right engineer for the role, I'm confident we can find a mutually competitive package.\"*\n2. **Anchor on Market Data**: Cite Levels.fyi or Carta data for your target role (Full Stack Engineer).\n3. **Counter with Total Compensation (TC)**: Split between Base, Equity/RSUs, and Sign-on bonus. Always negotiate the sign-on bonus if base salary bands are strict.\n4. **Leverage Competing Timelines**: Frame active interview loops politely to accelerate decisions.",
+      "createdAt": "2026-11-01T12:18:13.722Z"
     }
   ],
   "analytics_snapshots": [
@@ -609,6 +688,20 @@
       "metric": "coding_score",
       "value": 100,
       "recordedAt": "2026-10-13T04:05:25.788Z"
+    },
+    {
+      "id": "snapshot-1793535482654",
+      "userId": "user-demo-123",
+      "metric": "coding_score",
+      "value": 100,
+      "recordedAt": "2026-11-01T12:18:02.654Z"
+    },
+    {
+      "id": "snapshot-1793535490926",
+      "userId": "user-demo-123",
+      "metric": "ats_score",
+      "value": 71,
+      "recordedAt": "2026-11-01T12:18:10.926Z"
     }
   ]
 }

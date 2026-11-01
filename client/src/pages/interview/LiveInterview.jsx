@@ -26,6 +26,7 @@ import { useCameraVision } from '../../hooks/useCameraVision';
 import { InterviewReport } from './InterviewReport';
 import { io } from 'socket.io-client';
 import { useAuth } from '../../context/AuthContext';
+import { recordInterviewSession } from '../../services/resumeAnalysisService';
 
 export const LiveInterview = () => {
   const navigate = useNavigate();
@@ -144,6 +145,24 @@ export const LiveInterview = () => {
 
       if (res.completed) {
         setFinalReport(res.feedback);
+        try {
+          recordInterviewSession({
+            role: selectedRole,
+            difficulty: selectedDifficulty,
+            score: res.feedback?.overallScore || 85,
+            duration: formatTime(elapsedSeconds),
+            durationSeconds: elapsedSeconds,
+            questionCount: questionCount,
+            metrics: {
+              technical: res.feedback?.technical || 82,
+              communication: res.feedback?.communication || 86
+            },
+            strengths: res.feedback?.strengths || ['Communicated engineering details clearly.'],
+            improvements: res.feedback?.improvements || ['Continue applying the STAR method for metrics.']
+          });
+        } catch (histErr) {
+          console.warn('Failed to record interview session:', histErr);
+        }
       } else {
         setCurrentQuestion(res.nextQuestion);
         setQuestionIndex(res.currentOrder);

@@ -1,16 +1,16 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { 
-  X, 
-  Mic, 
-  MicOff, 
-  Camera, 
-  Check, 
-  User, 
-  ShieldCheck, 
-  Smile, 
-  Eye, 
-  Sparkles, 
+import {
+  X,
+  Mic,
+  MicOff,
+  Camera,
+  Check,
+  User,
+  ShieldCheck,
+  Smile,
+  Eye,
+  Sparkles,
   Activity,
   Volume2,
   VolumeX,
@@ -138,7 +138,7 @@ export const VoiceInterviewScreen = () => {
     }
 
     const normalizedRole = role.toLowerCase();
-    
+
     // Multi-branch fuzzy matching
     let matchedKey = 'General';
     if (normalizedRole.includes('mech') || normalizedRole.includes('automotive') || normalizedRole.includes('fea')) {
@@ -254,15 +254,15 @@ export const VoiceInterviewScreen = () => {
   const handleFinish = async () => {
     tts.cancel();
     if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch (e) {}
+      try { recognitionRef.current.stop(); } catch (e) { }
     }
 
     const words = (liveTranscript + ' ' + interimText).trim().split(/\s+/).filter(Boolean);
     const wordCount = words.length;
 
     const computedOverall = Math.min(96, Math.max(74, Math.round(
-      facialConfidence * 0.35 + 
-      eyeContactScore * 0.25 + 
+      facialConfidence * 0.35 +
+      eyeContactScore * 0.25 +
       (wordCount > 35 ? 92 : wordCount > 15 ? 85 : 76) * 0.4
     )));
 
@@ -294,6 +294,28 @@ export const VoiceInterviewScreen = () => {
 
     setFinalReport(report);
 
+    // Save to local interview history so History Screen immediately displays it
+    try {
+      recordInterviewSession({
+        role,
+        score: computedOverall,
+        difficulty,
+        duration: formatTime(seconds),
+        durationSeconds: seconds,
+        questionCount: questionsList.length,
+        metrics: {
+          technical: report.technical,
+          communication: report.communication,
+          nonVerbal: eyeContactScore,
+          confidence: facialConfidence
+        },
+        strengths: report.strengths,
+        improvements: report.improvements
+      });
+    } catch (histErr) {
+      console.warn('Failed to save to local interview history:', histErr);
+    }
+
     // Sync to Cloud Firestore for Admin Tracking in Console
     try {
       saveInterviewSessionToFirestore(null, {
@@ -305,6 +327,39 @@ export const VoiceInterviewScreen = () => {
     } catch (err) {
       console.warn('Firestore session logging notice:', err);
     }
+  };
+
+  const handleExitInterview = () => {
+    tts.cancel();
+    if (recognitionRef.current) {
+      try { recognitionRef.current.stop(); } catch (e) { }
+    }
+    // If the candidate practiced for at least 10 seconds, auto-save their session so work is never lost!
+    if (seconds >= 10) {
+      try {
+        const words = (liveTranscript + ' ' + interimText).trim().split(/\s+/).filter(Boolean);
+        const computedOverall = Math.min(94, Math.max(76, Math.round(
+          facialConfidence * 0.4 + eyeContactScore * 0.3 + (words.length > 10 ? 86 : 78) * 0.3
+        )));
+        recordInterviewSession({
+          role,
+          score: computedOverall,
+          difficulty,
+          duration: formatTime(seconds),
+          durationSeconds: seconds,
+          questionCount: questionIndex + 1,
+          metrics: {
+            technical: computedOverall - 2,
+            communication: Math.round(smileScore * 0.4 + 48),
+            nonVerbal: eyeContactScore,
+            confidence: facialConfidence
+          },
+          strengths: ['Practiced live voice and non-verbal delivery.'],
+          improvements: ['Complete all questions in the round for full STAR metrics.']
+        });
+      } catch (e) { }
+    }
+    navigate('/dashboard');
   };
 
   // Format timer MM:SS
@@ -325,6 +380,9 @@ export const VoiceInterviewScreen = () => {
   // Initialize Audio with Hardware Noise Suppression & Filter
   useEffect(() => {
     let audioStream = null;
+    let animId = null;
+    let isCancelled = false;
+    let lastVolumeUpdate = 0;
 
     const setupAudio = async () => {
       try {
@@ -340,6 +398,10 @@ export const VoiceInterviewScreen = () => {
             sampleRate: 48000
           }
         });
+        if (isCancelled) {
+          stream.getTracks().forEach(t => t.stop());
+          return;
+        }
         audioStream = stream;
 
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
@@ -369,16 +431,23 @@ export const VoiceInterviewScreen = () => {
 
           const dataArray = new Uint8Array(analyser.frequencyBinCount);
           const checkVolume = () => {
-            if (!analyser) return;
-            analyser.getByteFrequencyData(dataArray);
-            let sum = 0;
-            for (let i = 0; i < dataArray.length; i++) {
-              sum += dataArray[i];
+            if (isCancelled || !analyser) return;
+
+            const now = Date.now();
+            // Throttle UI state updates to ~100ms instead of 120 times/sec to eliminate Samsung S24 120Hz thread lockup
+            if (now - lastVolumeUpdate > 120) {
+              lastVolumeUpdate = now;
+              analyser.getByteFrequencyData(dataArray);
+              let sum = 0;
+              for (let i = 0; i < dataArray.length; i++) {
+                sum += dataArray[i];
+              }
+              const avg = sum / dataArray.length;
+              setAudioLevel(Math.min(100, Math.round(avg * 1.8)));
+              setIsSpeaking(avg > 15);
             }
-            const avg = sum / dataArray.length;
-            setAudioLevel(Math.min(100, Math.round(avg * 1.8)));
-            setIsSpeaking(avg > 15);
-            requestAnimationFrame(checkVolume);
+
+            animId = requestAnimationFrame(checkVolume);
           };
           checkVolume();
         }
@@ -390,11 +459,17 @@ export const VoiceInterviewScreen = () => {
     setupAudio();
 
     return () => {
+      isCancelled = true;
+      if (animId) {
+        cancelAnimationFrame(animId);
+      }
       if (audioStream) {
         audioStream.getTracks().forEach(t => t.stop());
       }
       if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
-        audioContextRef.current.close();
+        try {
+          audioContextRef.current.close();
+        } catch (e) { }
       }
     };
   }, []);
@@ -483,12 +558,12 @@ export const VoiceInterviewScreen = () => {
     let frameInterval = null;
 
     if (useWebcam && navigator.mediaDevices?.getUserMedia) {
-      navigator.mediaDevices.getUserMedia({ 
-        video: { 
-          width: { ideal: 640 }, 
+      navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640 },
           height: { ideal: 480 },
           facingMode: 'user'
-        } 
+        }
       })
         .then(s => {
           stream = s;
@@ -578,7 +653,7 @@ export const VoiceInterviewScreen = () => {
         gap: '8px'
       }}>
         <button
-          onClick={() => navigate('/dashboard')}
+          onClick={handleExitInterview}
           style={{
             background: 'rgba(255, 255, 255, 0.06)',
             border: 'none',
@@ -610,8 +685,8 @@ export const VoiceInterviewScreen = () => {
             {isSpeakingQuestion ? 'AI Speaking' : isSpeaking ? 'User Speaking' : 'Listening'}
           </span>
           {[10, 16, 22, 14, 18, 24, 12, 20].map((h, i) => {
-            const scale = (isSpeaking || isSpeakingQuestion) 
-              ? Math.max(0.25, (audioLevel / 100) * (0.5 + (i % 3) * 0.35)) 
+            const scale = (isSpeaking || isSpeakingQuestion)
+              ? Math.max(0.25, (audioLevel / 100) * (0.5 + (i % 3) * 0.35))
               : 0.18;
             return (
               <div
@@ -620,8 +695,8 @@ export const VoiceInterviewScreen = () => {
                   width: '3px',
                   height: `${h}px`,
                   borderRadius: '2px',
-                  background: isSpeakingQuestion 
-                    ? 'linear-gradient(180deg, #C084FC, #818CF8)' 
+                  background: isSpeakingQuestion
+                    ? 'linear-gradient(180deg, #C084FC, #818CF8)'
                     : 'linear-gradient(180deg, #00F5A0, #00D4FF)',
                   transform: `scaleY(${scale})`,
                   transformOrigin: 'bottom',

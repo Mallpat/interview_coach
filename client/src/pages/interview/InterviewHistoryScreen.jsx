@@ -17,6 +17,7 @@ export const InterviewHistoryScreen = () => {
 
   const handleClearHistory = () => {
     if (window.confirm('Reset all interview records to 0? This will give you a fresh new-user profile.')) {
+      localStorage.removeItem('candidate_interview_history');
       localStorage.removeItem('interview_coach_history');
       window.dispatchEvent(new Event('interview_history_updated'));
       setHistory([]);

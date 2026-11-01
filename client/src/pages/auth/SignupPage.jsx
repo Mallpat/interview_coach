@@ -369,7 +369,7 @@ export const SignupPage = () => {
 
       {/* Version Verification Indicator */}
       <div style={{ textAlign: 'center', marginTop: '1rem', fontSize: '0.72rem', color: '#64748B' }}>
-        v1.0.4 • Verified Stable
+        v1.0.5 • Verified Stable
       </div>
     </div>
   );

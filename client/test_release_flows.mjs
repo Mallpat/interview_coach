@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 const clientDir = import.meta.dirname;
 
 console.log('========================================================');
-console.log('🧪 VERIFYING RELEASE FLOWS & RUNTIME INTEGRITY (v1.0.4)');
+console.log('🧪 VERIFYING RELEASE FLOWS & RUNTIME INTEGRITY (v1.0.5)');
 console.log('========================================================\n');
 
 // 1. Verify ProfileSetupPage.jsx has Plus imported and used properly
@@ -32,8 +32,8 @@ const signupContent = fs.readFileSync(signupPath, 'utf8');
 
 assert.match(
   signupContent,
-  /v1\.0\.4\s*•\s*Verified Stable/,
-  'SignupPage.jsx must display v1.0.4 • Verified Stable'
+  /v1\.0\.5\s*•\s*Verified Stable/,
+  'SignupPage.jsx must display v1.0.5 • Verified Stable'
 );
 assert.match(
   signupContent,
@@ -66,15 +66,15 @@ const gradleContent = fs.readFileSync(gradlePath, 'utf8');
 
 assert.match(
   gradleContent,
-  /versionCode\s+5/,
-  'build.gradle must have versionCode 5'
+  /versionCode\s+6/,
+  'build.gradle must have versionCode 6'
 );
 assert.match(
   gradleContent,
-  /versionName\s+["']1\.0\.4["']/,
-  'build.gradle must have versionName "1.0.4"'
+  /versionName\s+["']1\.0\.5["']/,
+  'build.gradle must have versionName "1.0.5"'
 );
-console.log('  ✅ Android build.gradle is correctly configured with versionCode 5, versionName 1.0.4');
+console.log('  ✅ Android build.gradle is correctly configured with versionCode 6, versionName 1.0.5');
 
 // 5. Verify Text-To-Speech Integration & VoiceInterviewScreen Listen Button
 console.log('\nTest 5: Checking Text-To-Speech plugin integration...');

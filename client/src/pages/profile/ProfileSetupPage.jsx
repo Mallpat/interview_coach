@@ -478,7 +478,6 @@ export const ProfileSetupPage = () => {
           <input
             type="text"
             className="dark-input"
-            placeholder="e.g. Mallhar Pathak"
             value={fullName}
             onChange={(e) => {
               const val = e.target.value;

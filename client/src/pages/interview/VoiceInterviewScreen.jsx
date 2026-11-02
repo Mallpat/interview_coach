@@ -19,7 +19,9 @@ import {
 } from 'lucide-react';
 import { getActiveResumeAnalysis, recordInterviewSession } from '../../services/resumeAnalysisService';
 import { saveInterviewSessionToFirestore } from '../../services/firebase';
+import { Capacitor } from '@capacitor/core';
 import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
+import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 import { InterviewReport } from './InterviewReport';
 
 const QUESTIONS_BY_ROLE = {
@@ -199,6 +201,7 @@ export const VoiceInterviewScreen = () => {
   }, [role, candidateResume, activeResumeAnalysis]);
 
   const tts = useSpeechSynthesis();
+  const speech = useSpeechRecognition();
   const [questionIndex, setQuestionIndex] = useState(0);
   const isSpeakingQuestion = tts.isSpeaking;
   const isSpeakingQuestionRef = useRef(false);
@@ -221,24 +224,43 @@ export const VoiceInterviewScreen = () => {
   const [eyeContactScore, setEyeContactScore] = useState(88);
   const [confidenceTier, setConfidenceTier] = useState('High Confidence');
 
-  // Live Speech to Text (starts empty, transcribed as user speaks)
-  const [liveTranscript, setLiveTranscript] = useState('');
-  const [interimText, setInterimText] = useState('');
-  const [isSpeaking, setIsSpeaking] = useState(false);
-  const [audioLevel, setAudioLevel] = useState(45);
+  // Live Speech to Text (transcribed in real time as candidate speaks)
+  const liveTranscript = speech.transcript;
+  const interimText = speech.interimText;
+  const [isSpeakingWeb, setIsSpeakingWeb] = useState(false);
+  const [webAudioLevel, setWebAudioLevel] = useState(45);
+
+  const isSpeaking = isSpeakingQuestion ? false : (speech.isSpeaking || isSpeakingWeb);
+  const audioLevel = isSpeakingQuestion ? 60 : (speech.audioLevel > 0 ? speech.audioLevel : webAudioLevel);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const audioContextRef = useRef(null);
-  const recognitionRef = useRef(null);
   const streamRef = useRef(null);
+
+  // Coordinate speech recognition: actively transcribe candidate answers when recording & AI is silent
+  useEffect(() => {
+    if (isRecording && !isSpeakingQuestion) {
+      speech.startListening();
+    } else {
+      speech.stopListening();
+    }
+  }, [isRecording, isSpeakingQuestion]);
 
   // Voice read aloud for question (Cross-platform Capacitor native TTS + Web speech fallback)
   const speakCurrentQuestion = () => {
     if (tts.isSpeaking) {
       tts.cancel();
+      if (isRecording) {
+        speech.startListening();
+      }
     } else {
-      tts.speak(currentQuestion);
+      speech.stopListening();
+      tts.speak(currentQuestion, () => {
+        if (isRecording) {
+          speech.startListening();
+        }
+      });
     }
   };
 
@@ -246,16 +268,13 @@ export const VoiceInterviewScreen = () => {
 
   const handleNextQuestion = () => {
     tts.cancel();
+    speech.resetTranscript();
     setQuestionIndex(prev => (prev + 1) % questionsList.length);
-    setLiveTranscript('');
-    setInterimText('');
   };
 
   const handleFinish = async () => {
     tts.cancel();
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch (e) { }
-    }
+    speech.stopListening();
 
     const words = (liveTranscript + ' ' + interimText).trim().split(/\s+/).filter(Boolean);
     const wordCount = words.length;
@@ -331,11 +350,9 @@ export const VoiceInterviewScreen = () => {
 
   const handleExitInterview = () => {
     tts.cancel();
+    speech.stopListening();
     if (streamRef.current) {
       try { streamRef.current.getTracks().forEach(t => t.stop()); } catch (e) { }
-    }
-    if (recognitionRef.current) {
-      try { recognitionRef.current.stop(); } catch (e) { }
     }
     // If the candidate practiced for at least 10 seconds, auto-save their session so work is never lost!
     if (seconds >= 10) {
@@ -387,20 +404,21 @@ export const VoiceInterviewScreen = () => {
     let isCancelled = false;
     let lastVolumeUpdate = 0;
     let frameInterval = null;
+    const isNative = Capacitor.isNativePlatform();
 
     const setupMedia = async () => {
       if (!navigator.mediaDevices?.getUserMedia) return;
 
       try {
-        // Coordinated single media request: avoids concurrent permission prompts & OS race conditions
+        // Coordinated single media request: on native mobile, audio is handled by native SpeechRecognizer
         const constraints = {
-          audio: {
+          audio: !isNative ? {
             echoCancellation: true,
             noiseSuppression: true,
             autoGainControl: true,
             channelCount: 1,
             sampleRate: 48000
-          },
+          } : false,
           video: useWebcam ? {
             width: { ideal: 640 },
             height: { ideal: 480 },
@@ -416,16 +434,18 @@ export const VoiceInterviewScreen = () => {
           // If video failed (camera busy or restricted), seamlessly fallback to clean audio-only
           if (useWebcam) {
             setUseWebcam(false);
-            try {
-              stream = await navigator.mediaDevices.getUserMedia({
-                audio: {
-                  echoCancellation: true,
-                  noiseSuppression: true,
-                  autoGainControl: true
-                }
-              });
-            } catch (audioOnlyErr) {
-              console.warn('Audio fallback notice:', audioOnlyErr.message);
+            if (!isNative) {
+              try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                  audio: {
+                    echoCancellation: true,
+                    noiseSuppression: true,
+                    autoGainControl: true
+                  }
+                });
+              } catch (audioOnlyErr) {
+                console.warn('Audio fallback notice:', audioOnlyErr.message);
+              }
             }
           }
         }
@@ -446,7 +466,7 @@ export const VoiceInterviewScreen = () => {
           });
         }
 
-        // 2. Attach Audio to AudioContext Analyzer for Noise Filter & Volume Meter
+        // 2. Attach Audio to AudioContext Analyzer for Noise Filter & Volume Meter (Web fallback)
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (AudioCtx && stream.getAudioTracks().length > 0) {
           try {
@@ -487,8 +507,8 @@ export const VoiceInterviewScreen = () => {
                   sum += dataArray[i];
                 }
                 const avg = sum / dataArray.length;
-                setAudioLevel(Math.min(100, Math.round(avg * 1.8)));
-                setIsSpeaking(avg > 15);
+                setWebAudioLevel(Math.min(100, Math.round(avg * 1.8)));
+                setIsSpeakingWeb(avg > 15);
               }
 
               animId = requestAnimationFrame(checkVolume);
@@ -560,96 +580,7 @@ export const VoiceInterviewScreen = () => {
     };
   }, [useWebcam]);
 
-  // Web Speech Recognition for Live Captions on Screen with Backoff Protection
-  useEffect(() => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    if (!SpeechRecognition) {
-      console.warn('SpeechRecognition API not natively supported in this browser; fallback active');
-      return;
-    }
-
-    let recognition = null;
-    let restartTimer = null;
-    let retryCount = 0;
-    let isCancelled = false;
-
-    try {
-      recognition = new SpeechRecognition();
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.lang = 'en-US';
-
-      recognition.onresult = (event) => {
-        retryCount = 0; // Reset retry counter on successful speech event
-        if (isSpeakingQuestionRef.current) {
-          return;
-        }
-
-        let finalStr = '';
-        let interimStr = '';
-
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-          const transcriptSegment = event.results[i][0].transcript;
-          if (event.results[i].isFinal) {
-            finalStr += transcriptSegment + ' ';
-          } else {
-            interimStr += transcriptSegment;
-          }
-        }
-
-        if (finalStr.trim()) {
-          setLiveTranscript(prev => {
-            const combined = `${prev} ${finalStr}`.trim();
-            return combined.length > 200 ? combined.slice(-200) : combined;
-          });
-        }
-        setInterimText(interimStr);
-        setIsSpeaking(true);
-      };
-
-      recognition.onerror = (err) => {
-        console.warn('Speech recognition notice:', err.error);
-        if (err.error === 'not-allowed' || err.error === 'service-not-allowed') {
-          // Permission not granted or service unavailable; do NOT retry in a tight loop!
-          retryCount = 10;
-        }
-      };
-
-      recognition.onend = () => {
-        // Auto-restart while recording is active with backoff delay to prevent crash loops
-        if (isRecording && !isCancelled && retryCount < 5) {
-          retryCount++;
-          restartTimer = setTimeout(() => {
-            if (isRecording && !isCancelled) {
-              try {
-                recognition.start();
-              } catch (e) { }
-            }
-          }, 1500); // 1.5s backoff prevents main thread lockup
-        }
-      };
-
-      if (isRecording) {
-        recognition.start();
-        recognitionRef.current = recognition;
-      }
-    } catch (e) {
-      console.warn('Speech recognition initialization notice:', e);
-    }
-
-    return () => {
-      isCancelled = true;
-      if (restartTimer) {
-        clearTimeout(restartTimer);
-      }
-      if (recognition) {
-        try {
-          recognition.abort();
-        } catch (e) { }
-      }
-    };
-  }, [isRecording]);
 
   if (finalReport) {
     return (

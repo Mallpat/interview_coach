@@ -77,7 +77,12 @@ export const useSpeechSynthesis = () => {
 
   const speak = useCallback(async (text, onEnd) => {
     if (!text) return;
-    const cleanText = text.trim();
+    // Clean nested quotes, markdown syntax, and extra whitespace for crisp speech delivery
+    const cleanText = text
+      .replace(/^["'\s]+|["'\s]+$/g, '')
+      .replace(/[*_#`]/g, '')
+      .replace(/"/g, '')
+      .trim();
     if (!cleanText) return;
 
     // Stop any ongoing speech first

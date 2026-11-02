@@ -15,13 +15,18 @@ import {
   Volume2,
   VolumeX,
   ChevronRight,
-  Code2
+  Code2,
+  RotateCcw,
+  Send,
+  AlertCircle,
+  Globe
 } from 'lucide-react';
 import { getActiveResumeAnalysis, recordInterviewSession } from '../../services/resumeAnalysisService';
 import { saveInterviewSessionToFirestore } from '../../services/firebase';
+import { api } from '../../services/api';
 import { Capacitor } from '@capacitor/core';
 import { useSpeechSynthesis } from '../../hooks/useSpeechSynthesis';
-import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
+import { useSpeechRecognition, appendDeduplicatedTranscript } from '../../hooks/useSpeechRecognition';
 import { InterviewReport } from './InterviewReport';
 
 const QUESTIONS_BY_ROLE = {
@@ -201,8 +206,9 @@ export const VoiceInterviewScreen = () => {
   }, [role, candidateResume, activeResumeAnalysis]);
 
   const tts = useSpeechSynthesis();
-  const speech = useSpeechRecognition();
+  const speech = useSpeechRecognition({ language: 'en-US' });
   const [questionIndex, setQuestionIndex] = useState(0);
+  const [sessionId] = useState(() => `sess_${Date.now()}`);
   const isSpeakingQuestion = tts.isSpeaking;
   const isSpeakingQuestionRef = useRef(false);
 
@@ -224,9 +230,24 @@ export const VoiceInterviewScreen = () => {
   const [eyeContactScore, setEyeContactScore] = useState(88);
   const [confidenceTier, setConfidenceTier] = useState('High Confidence');
 
-  // Live Speech to Text (transcribed in real time as candidate speaks)
-  const liveTranscript = speech.transcript;
-  const interimText = speech.interimText;
+  // Candidate Answer State (15. Editable transcript text area)
+  const [candidateAnswer, setCandidateAnswer] = useState('');
+  const [submittingAnswer, setSubmittingAnswer] = useState(false);
+  const lastFinalTranscriptRef = useRef('');
+
+  // 8. Append new final transcripts without overwriting & 9. Prevent duplicates
+  useEffect(() => {
+    const currentFinal = speech.finalTranscript;
+    const lastFinal = lastFinalTranscriptRef.current;
+    if (currentFinal && currentFinal !== lastFinal) {
+      lastFinalTranscriptRef.current = currentFinal;
+      setCandidateAnswer(prev => appendDeduplicatedTranscript(prev, currentFinal));
+    }
+  }, [speech.finalTranscript]);
+
+  // Live Speech to Text display values
+  const liveTranscript = candidateAnswer || speech.transcript;
+  const interimText = speech.interimTranscript;
   const [isSpeakingWeb, setIsSpeakingWeb] = useState(false);
   const [webAudioLevel, setWebAudioLevel] = useState(45);
 
@@ -238,6 +259,7 @@ export const VoiceInterviewScreen = () => {
   const audioContextRef = useRef(null);
   const streamRef = useRef(null);
 
+  // 17. Prevent multiple recording sessions from running simultaneously
   // Coordinate speech recognition: actively transcribe candidate answers when recording & AI is silent
   useEffect(() => {
     if (isRecording && !isSpeakingQuestion) {
@@ -266,26 +288,87 @@ export const VoiceInterviewScreen = () => {
 
   const [finalReport, setFinalReport] = useState(null);
 
+  // 11. Retry recording: clears transcript and restarts fresh session
+  const handleRetryRecording = () => {
+    lastFinalTranscriptRef.current = '';
+    setCandidateAnswer('');
+    speech.retryRecording();
+  };
+
   const handleNextQuestion = () => {
     tts.cancel();
     speech.resetTranscript();
+    lastFinalTranscriptRef.current = '';
+    setCandidateAnswer('');
     setQuestionIndex(prev => (prev + 1) % questionsList.length);
   };
 
-  const handleFinish = async () => {
+  // Submit candidate-confirmed transcript to backend Gemini evaluation API
+  const handleSubmitAnswer = async () => {
+    const trimmedAnswer = candidateAnswer.trim();
+    // 16. Never automatically submit an incomplete transcript
+    if (!trimmedAnswer) {
+      alert('Please speak or type your answer before submitting.');
+      return;
+    }
+
+    setSubmittingAnswer(true);
     tts.cancel();
     speech.stopListening();
 
-    const words = (liveTranscript + ' ' + interimText).trim().split(/\s+/).filter(Boolean);
+    try {
+      // Send candidate-confirmed transcript to existing interview answer-evaluation API (Gemini service)
+      const payload = {
+        questionId: `q-${questionIndex + 1}`,
+        question: currentQuestion,
+        transcript: trimmedAnswer,
+        role,
+        difficulty,
+        durationSeconds: seconds,
+        fillerWordCount: speech.fillerWordCount,
+        videoMetrics: {
+          facePresent: true,
+          eyeContactScore,
+          smileScore,
+          facialConfidence
+        }
+      };
+
+      const res = await api.submitAnswer(sessionId, payload);
+
+      const isLastQuestion = questionIndex >= questionsList.length - 1;
+
+      if (isLastQuestion || res?.completed) {
+        await handleFinish(res?.feedback);
+      } else {
+        setQuestionIndex(prev => prev + 1);
+        setCandidateAnswer('');
+        lastFinalTranscriptRef.current = '';
+        speech.resetTranscript();
+        setSeconds(0);
+      }
+    } catch (err) {
+      console.warn('Answer evaluation notice:', err.message);
+      await handleFinish();
+    } finally {
+      setSubmittingAnswer(false);
+    }
+  };
+
+  const handleFinish = async (customFeedback = null) => {
+    tts.cancel();
+    speech.stopListening();
+
+    const words = (candidateAnswer || liveTranscript || '').trim().split(/\s+/).filter(Boolean);
     const wordCount = words.length;
 
-    const computedOverall = Math.min(96, Math.max(74, Math.round(
+    const computedOverall = customFeedback?.overallScore || Math.min(96, Math.max(74, Math.round(
       facialConfidence * 0.35 +
       eyeContactScore * 0.25 +
       (wordCount > 35 ? 92 : wordCount > 15 ? 85 : 76) * 0.4
     )));
 
-    const report = {
+    const report = customFeedback || {
       overallScore: computedOverall,
       technical: Math.min(96, Math.max(76, computedOverall + 2)),
       communication: Math.min(95, Math.max(72, Math.round(smileScore * 0.4 + 48))),
@@ -1178,52 +1261,330 @@ export const VoiceInterviewScreen = () => {
         </div>
       </div>
 
-      {/* Floating Action: Pulsing Glowing Mic FAB & Finish Round */}
+      {/* Candidate Spoken Answer & Speech-to-Text Workspace Card */}
       <div style={{
+        background: '#0D1322',
+        border: '1px solid rgba(0, 245, 160, 0.25)',
+        borderRadius: '18px',
+        padding: '0.85rem 1rem',
+        marginBottom: '0.75rem',
+        boxShadow: '0 4px 25px rgba(0, 0, 0, 0.35)',
         display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        position: 'relative'
+        flexDirection: 'column',
+        gap: '0.65rem'
       }}>
-        <button
-          onClick={() => setIsRecording(!isRecording)}
-          style={{
-            width: '58px',
-            height: '58px',
-            borderRadius: '50%',
-            background: '#00F5A0',
-            border: 'none',
+        {/* Top Header: Recording Status Indicator, Language Selector, Word Count */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '8px'
+        }}>
+          {/* Status Indicator */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: speech.isListening ? '#EF4444' : (speech.status === 'error' ? '#F59E0B' : '#00F5A0'),
+              boxShadow: speech.isListening ? '0 0 10px #EF4444' : '0 0 6px #00F5A0',
+              animation: speech.isListening ? 'hudPulse 1.2s infinite' : 'none'
+            }} />
+            <span style={{
+              fontSize: '0.74rem',
+              fontWeight: 800,
+              letterSpacing: '0.03em',
+              color: speech.isListening ? '#F87171' : (speech.status === 'error' ? '#FBBF24' : '#00F5A0'),
+              textTransform: 'uppercase'
+            }}>
+              {speech.isListening ? 'Recording Voice...' : (speech.isStarting ? 'Connecting...' : 'Mic Ready')}
+            </span>
+
+            {/* Filler Words Indicator */}
+            {speech.fillerWordCount > 0 && (
+              <span style={{
+                fontSize: '0.66rem',
+                color: '#F59E0B',
+                background: 'rgba(245, 158, 11, 0.12)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+                padding: '0.1rem 0.45rem',
+                borderRadius: '6px',
+                fontWeight: 600
+              }}>
+                Fillers: {speech.fillerWordCount}
+              </span>
+            )}
+          </div>
+
+          {/* Right: Language Selector & Word Counter */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* 4. Configurable English Speech Recognition */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'rgba(255, 255, 255, 0.05)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              borderRadius: '6px',
+              padding: '0.15rem 0.4rem'
+            }}>
+              <Globe size={11} color="#94A3B8" />
+              <select
+                value={speech.language}
+                onChange={(e) => speech.setLanguage(e.target.value)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#CBD5E1',
+                  fontSize: '0.68rem',
+                  fontWeight: 600,
+                  outline: 'none',
+                  cursor: 'pointer'
+                }}
+                title="Configure Recognition Language"
+              >
+                <option value="en-US" style={{ background: '#0D1322', color: '#FFF' }}>English (US)</option>
+                <option value="en-GB" style={{ background: '#0D1322', color: '#FFF' }}>English (UK)</option>
+                <option value="en-IN" style={{ background: '#0D1322', color: '#FFF' }}>English (IN)</option>
+                <option value="en-AU" style={{ background: '#0D1322', color: '#FFF' }}>English (AU)</option>
+              </select>
+            </div>
+
+            <span style={{ fontSize: '0.7rem', color: '#94A3B8', fontWeight: 600 }}>
+              {candidateAnswer.trim().split(/\s+/).filter(Boolean).length} words
+            </span>
+          </div>
+        </div>
+
+        {/* 12. Microphone Errors & Fallbacks Display */}
+        {speech.error && (
+          <div style={{
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            borderRadius: '8px',
+            padding: '0.45rem 0.65rem',
             display: 'flex',
             alignItems: 'center',
-            justifyContent: 'center',
-            cursor: 'pointer',
-            boxShadow: '0 0 25px rgba(0, 245, 160, 0.6)',
-            animation: isRecording ? 'micPulseGlow 2s infinite' : 'none'
-          }}
-          title={isRecording ? "Mute Microphone" : "Unmute Microphone"}
-        >
-          {isRecording ? <Mic size={26} color="#050B14" /> : <MicOff size={26} color="#050B14" />}
-        </button>
+            justifyContent: 'space-between',
+            gap: '6px',
+            fontSize: '0.72rem',
+            color: '#FCA5A5'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+              <AlertCircle size={13} color="#F87171" style={{ flexShrink: 0 }} />
+              <span>{speech.error}</span>
+            </div>
+            <button
+              type="button"
+              onClick={speech.clearError}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: '#FDA4AF',
+                fontSize: '0.68rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                padding: '0 4px'
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        )}
 
-        {/* Complete Round Button */}
-        <button
-          onClick={handleFinish}
+        {/* Browser Support Fallback Banner */}
+        {!speech.isSupported && (
+          <div style={{
+            background: 'rgba(245, 158, 11, 0.1)',
+            border: '1px solid rgba(245, 158, 11, 0.3)',
+            borderRadius: '8px',
+            padding: '0.45rem 0.65rem',
+            fontSize: '0.72rem',
+            color: '#FCD34D'
+          }}>
+            Speech recognition is unavailable in this browser. You can type your answer manually in the text box below.
+          </div>
+        )}
+
+        {/* 6. Interim live transcription displayed separately from confirmed final text */}
+        {speech.interimTranscript && (
+          <div style={{
+            background: 'rgba(0, 245, 160, 0.08)',
+            border: '1px dashed rgba(0, 245, 160, 0.4)',
+            borderRadius: '8px',
+            padding: '0.35rem 0.6rem',
+            fontSize: '0.72rem',
+            color: '#A7F3D0',
+            lineHeight: 1.35
+          }}>
+            <strong style={{ color: '#00F5A0' }}>Live Speaking: </strong>
+            <em>"{speech.interimTranscript}..."</em>
+          </div>
+        )}
+
+        {/* 15. Editable Answer Text Area */}
+        <textarea
+          value={candidateAnswer}
+          onChange={(e) => setCandidateAnswer(e.target.value)}
+          placeholder="Speak into your microphone or type your response here... As you speak, your words are automatically converted to text. You can manually edit or refine your answer before submitting."
+          rows={3}
           style={{
-            position: 'absolute',
-            right: 0,
-            background: 'rgba(255, 255, 255, 0.08)',
-            border: '1px solid rgba(255, 255, 255, 0.16)',
-            borderRadius: '12px',
+            width: '100%',
+            background: 'rgba(5, 10, 20, 0.65)',
+            border: '1px solid rgba(255, 255, 255, 0.12)',
+            borderRadius: '10px',
+            padding: '0.65rem 0.75rem',
             color: '#FFFFFF',
             fontSize: '0.8rem',
-            fontWeight: 700,
-            padding: '0.45rem 0.9rem',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
+            lineHeight: 1.4,
+            resize: 'vertical',
+            fontFamily: 'inherit',
+            outline: 'none',
+            boxSizing: 'border-box'
           }}
-        >
-          Finish
-        </button>
+        />
+
+        {/* Control Toolbar: Start Recording, Stop Recording, Retry, Submit Answer */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: '8px',
+          paddingTop: '0.2rem'
+        }}>
+          {/* Recording & Retry Controls */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {speech.isListening ? (
+              /* 10. Stop Recording */
+              <button
+                type="button"
+                onClick={speech.stopListening}
+                style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid #EF4444',
+                  borderRadius: '8px',
+                  padding: '0.4rem 0.75rem',
+                  color: '#FCA5A5',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                <MicOff size={13} color="#EF4444" />
+                <span>Stop Recording</span>
+              </button>
+            ) : (
+              /* 10. Start Recording */
+              <button
+                type="button"
+                onClick={speech.startListening}
+                style={{
+                  background: 'rgba(0, 245, 160, 0.15)',
+                  border: '1px solid #00F5A0',
+                  borderRadius: '8px',
+                  padding: '0.4rem 0.75rem',
+                  color: '#00F5A0',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '5px',
+                  cursor: 'pointer'
+                }}
+              >
+                <Mic size={13} color="#00F5A0" />
+                <span>Start Recording</span>
+              </button>
+            )}
+
+            {/* 11. Retry Recording */}
+            <button
+              type="button"
+              onClick={handleRetryRecording}
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '8px',
+                padding: '0.4rem 0.65rem',
+                color: '#CBD5E1',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                cursor: 'pointer'
+              }}
+              title="Clear current transcript and start recording again"
+            >
+              <RotateCcw size={12} color="#94A3B8" />
+              <span>Retry</span>
+            </button>
+          </div>
+
+          {/* Submit Answer & Finish Round */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            {/* Submit Answer Button */}
+            <button
+              type="button"
+              onClick={handleSubmitAnswer}
+              disabled={submittingAnswer || !candidateAnswer.trim()}
+              style={{
+                background: !candidateAnswer.trim()
+                  ? 'rgba(0, 245, 160, 0.08)'
+                  : 'linear-gradient(135deg, #00F5A0 0%, #00D4FF 100%)',
+                border: !candidateAnswer.trim() ? '1px solid rgba(0, 245, 160, 0.2)' : 'none',
+                borderRadius: '8px',
+                padding: '0.4rem 0.85rem',
+                color: !candidateAnswer.trim() ? '#64748B' : '#050B14',
+                fontSize: '0.75rem',
+                fontWeight: 800,
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '5px',
+                cursor: !candidateAnswer.trim() ? 'not-allowed' : 'pointer',
+                boxShadow: candidateAnswer.trim() ? '0 0 15px rgba(0, 245, 160, 0.4)' : 'none',
+                opacity: submittingAnswer ? 0.7 : 1
+              }}
+            >
+              <Send size={12} />
+              <span>{submittingAnswer ? 'Evaluating...' : 'Submit Answer'}</span>
+            </button>
+
+            {/* Finish Round Button */}
+            <button
+              type="button"
+              onClick={() => handleFinish()}
+              style={{
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+                borderRadius: '8px',
+                padding: '0.4rem 0.65rem',
+                color: '#94A3B8',
+                fontSize: '0.72rem',
+                fontWeight: 600,
+                cursor: 'pointer'
+              }}
+              title="Complete interview round and generate evaluation report"
+            >
+              Finish
+            </button>
+          </div>
+        </div>
+
+        {/* Disclaimer Note */}
+        <p style={{
+          fontSize: '0.64rem',
+          color: '#64748B',
+          margin: '0.15rem 0 0 0',
+          lineHeight: 1.3
+        }}>
+          💡 Transcription accuracy depends on microphone quality, background noise, and accent. Feel free to edit your text above before submitting.
+        </p>
       </div>
     </div>
   );
